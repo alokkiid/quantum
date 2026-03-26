@@ -127,31 +127,6 @@
 
 {% block scripts %}
 <script>
-const nodes = [
-  { id: 'GENESIS', x: 450, y: 300, r: 32, status: 'genesis', load: 12, algo: 'AES-256', lastRot: '2s ago' },
-  { id: 'NODE-A1', x: 250, y: 150, r: 24, status: 'active', load: 23, algo: 'AES-128', lastRot: '45s ago' },
-  { id: 'NODE-A2', x: 650, y: 150, r: 24, status: 'active', load: 18, algo: 'AES-128', lastRot: '30s ago' },
-  { id: 'NODE-B1', x: 150, y: 300, r: 24, status: 'active', load: 31, algo: 'AES-128', lastRot: '1m ago' },
-  { id: 'NODE-B2', x: 750, y: 300, r: 24, status: 'active', load: 8, algo: 'AES-128', lastRot: '15s ago' },
-  { id: 'NODE-C1', x: 250, y: 450, r: 24, status: 'active', load: 45, algo: 'AES-256', lastRot: '10s ago' },
-  { id: 'NODE-C2', x: 650, y: 450, r: 24, status: 'active', load: 14, algo: 'AES-128', lastRot: '50s ago' },
-  { id: 'NODE-D1', x: 350, y: 180, r: 22, status: 'active', load: 27, algo: 'AES-128', lastRot: '25s ago' },
-  { id: 'NODE-D2', x: 550, y: 180, r: 22, status: 'active', load: 19, algo: 'AES-128', lastRot: '40s ago' },
-  { id: 'NODE-D3', x: 350, y: 420, r: 22, status: 'suspicious', load: 67, algo: 'AES-256', lastRot: '5s ago' },
-  { id: 'NODE-D4', x: 550, y: 420, r: 22, status: 'compromised', load: 92, algo: 'CONT_ROT', lastRot: '1s ago' },
-  { id: 'NODE-E1', x: 450, y: 500, r: 20, status: 'active', load: 11, algo: 'AES-128', lastRot: '55s ago' },
-];
-
-const edges = [
-  ['GENESIS', 'NODE-A1'], ['GENESIS', 'NODE-A2'], ['GENESIS', 'NODE-B1'], ['GENESIS', 'NODE-B2'],
-  ['GENESIS', 'NODE-D1'], ['GENESIS', 'NODE-D2'],
-  ['NODE-A1', 'NODE-D1'], ['NODE-A2', 'NODE-D2'],
-  ['NODE-B1', 'NODE-C1'], ['NODE-B2', 'NODE-C2'],
-  ['NODE-C1', 'NODE-D3'], ['NODE-C2', 'NODE-D4'],
-  ['NODE-D3', 'NODE-E1'], ['NODE-D4', 'NODE-E1'],
-  ['GENESIS', 'NODE-C1'], ['GENESIS', 'NODE-C2'],
-];
-
 function hexPoints(cx, cy, r) {
   return Array.from({length: 6}, (_, i) => {
     const angle = Math.PI / 6 + (i * Math.PI / 3);
@@ -159,25 +134,75 @@ function hexPoints(cx, cy, r) {
   }).join(' ');
 }
 
-// Draw edges
-const edgeGroup = document.getElementById('edges');
-edges.forEach(([from, to]) => {
-  const a = nodes.find(n => n.id === from);
-  const b = nodes.find(n => n.id === to);
-  if (!a || !b) return;
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
-  line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
-  line.setAttribute('stroke', 'rgba(0,229,255,0.15)');
-  line.setAttribute('stroke-width', '1');
-  line.setAttribute('stroke-dasharray', '4 4');
-  line.classList.add('animate-dash');
-  edgeGroup.appendChild(line);
-});
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `${r},${g},${b}`;
+}
 
-// Draw nodes
-const nodeGroup = document.getElementById('nodes');
-nodes.forEach(n => {
+function buildTopology(fileNodes) {
+  const edgeGroup = document.getElementById('edges');
+  const nodeGroup = document.getElementById('nodes');
+  edgeGroup.innerHTML = '';
+  nodeGroup.innerHTML = '';
+
+  // GENESIS node is always present
+  const genesis = { id: 'GENESIS', x: 450, y: 300, r: 32, status: 'genesis', algo: 'HUB', load: 0, lastRot: 'N/A' };
+
+  if (fileNodes.length === 0) {
+    // Empty state — just show GENESIS with a message
+    drawNode(genesis, nodeGroup);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', 450); text.setAttribute('y', 380);
+    text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', 'rgba(255,255,255,0.2)');
+    text.setAttribute('font-family', 'JetBrains Mono'); text.setAttribute('font-size', '11');
+    text.textContent = 'Upload files to populate the topology';
+    nodeGroup.appendChild(text);
+    return;
+  }
+
+  // Position file nodes in a radial layout around GENESIS
+  const nodes = [genesis];
+  const angleStep = (2 * Math.PI) / fileNodes.length;
+  const radius = Math.min(200, 80 + fileNodes.length * 20);
+
+  fileNodes.forEach((f, i) => {
+    const angle = -Math.PI / 2 + i * angleStep;
+    nodes.push({
+      id: f.name.length > 12 ? f.name.substring(0, 10) + '..' : f.name,
+      fullName: f.name,
+      x: 450 + radius * Math.cos(angle),
+      y: 300 + radius * Math.sin(angle),
+      r: 24,
+      status: f.status,
+      algo: f.algo,
+      load: f.rotations,
+      lastRot: f.last_rotation ? f.last_rotation.substring(11, 19) || 'N/A' : 'N/A',
+      fileId: f.id,
+    });
+  });
+
+  // Draw edges from each file to GENESIS
+  nodes.slice(1).forEach(n => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', genesis.x); line.setAttribute('y1', genesis.y);
+    line.setAttribute('x2', n.x); line.setAttribute('y2', n.y);
+    line.setAttribute('stroke', 'rgba(0,229,255,0.15)');
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke-dasharray', '4 4');
+    line.classList.add('animate-dash');
+    edgeGroup.appendChild(line);
+  });
+
+  // Draw all nodes
+  nodes.forEach(n => drawNode(n, nodeGroup));
+
+  // Update health table
+  updateHealthTable(nodes);
+}
+
+function drawNode(n, nodeGroup) {
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.classList.add('hex-node');
 
@@ -185,7 +210,7 @@ nodes.forEach(n => {
     genesis: '#00E5FF', active: '#00E5FF',
     suspicious: '#B829EA', compromised: '#FF3366'
   };
-  const color = colors[n.status];
+  const color = colors[n.status] || '#00E5FF';
   const fillOpacity = n.status === 'genesis' ? '0.15' : '0.05';
   const filter = n.status === 'genesis' ? 'url(#glow-cyan)' : n.status === 'compromised' ? 'url(#glow-red)' : '';
 
@@ -216,14 +241,14 @@ nodes.forEach(n => {
   text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', color);
   text.setAttribute('font-family', 'JetBrains Mono'); text.setAttribute('font-size', n.r > 28 ? '8' : '7');
   text.setAttribute('opacity', '0.8');
-  text.textContent = n.id.replace('NODE-', '');
+  text.textContent = n.id;
   g.appendChild(text);
 
   // Tooltip
   g.addEventListener('mouseenter', (e) => {
     const tooltip = document.getElementById('node-tooltip');
-    document.getElementById('tt-id').textContent = n.id;
-    document.getElementById('tt-load').textContent = n.load + '%';
+    document.getElementById('tt-id').textContent = n.fullName || n.id;
+    document.getElementById('tt-load').textContent = (n.load || 0) + ' rotations';
     document.getElementById('tt-algo').textContent = n.algo;
     document.getElementById('tt-rotation').textContent = n.lastRot;
     tooltip.style.left = (e.clientX + 15) + 'px';
@@ -240,24 +265,31 @@ nodes.forEach(n => {
   });
 
   nodeGroup.appendChild(g);
-});
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3), 16);
-  const g = parseInt(hex.slice(3,5), 16);
-  const b = parseInt(hex.slice(5,7), 16);
-  return `${r},${g},${b}`;
 }
 
-// Health table
-const tbody = document.getElementById('health-tbody');
-nodes.slice(0, 6).forEach(n => {
+function updateHealthTable(nodes) {
+  const tbody = document.getElementById('health-tbody');
+  tbody.innerHTML = '';
   const statusColors = { genesis: 'text-state-cyan', active: 'text-state-green', suspicious: 'text-state-purple', compromised: 'text-state-red' };
-  const tr = document.createElement('tr');
-  tr.className = 'border-t border-white/[0.04]';
-  tr.innerHTML = `<td class="py-1.5 text-white/50">${n.id}</td><td class="${statusColors[n.status]}">${n.status.toUpperCase()}</td><td class="text-white/40">${n.load}%</td><td class="text-white/40">${n.algo}</td>`;
-  tbody.appendChild(tr);
-});
+  nodes.forEach(n => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-white/[0.04]';
+    tr.innerHTML = `<td class="py-1.5 text-white/50">${n.fullName || n.id}</td><td class="${statusColors[n.status] || 'text-white/40'}">${n.status.toUpperCase()}</td><td class="text-white/40">${n.load || 0}</td><td class="text-white/40">${n.algo}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Fetch topology data from API
+function loadTopology() {
+  fetch('/admin/api/topology-data').then(r => r.json()).then(data => {
+    buildTopology(data.nodes || []);
+  }).catch(() => {
+    buildTopology([]);
+  });
+}
+
+loadTopology();
+setInterval(loadTopology, 10000);
 
 // Entropy stream
 function updateEntropy() {

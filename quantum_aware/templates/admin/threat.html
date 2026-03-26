@@ -99,25 +99,18 @@
 
 {% block scripts %}
 <script>
-// Timeline chart
+// Timeline chart — will be populated from API
 const timeCtx = document.getElementById('timelineChart');
 let timelineChart = null;
 if (timeCtx) {
-  const labels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}:00`);
-  const normalData = labels.map(() => Math.floor(Math.random() * 20 + 5));
-  const susData = labels.map(() => Math.floor(Math.random() * 8));
-  const atkData = labels.map(() => Math.floor(Math.random() * 3));
-  // Add spikes
-  susData[14] = 35; susData[15] = 28; atkData[15] = 12; atkData[16] = 8;
-
   timelineChart = new Chart(timeCtx, {
     type: 'line',
     data: {
-      labels,
+      labels: Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}:00`),
       datasets: [
-        { label: 'Normal', data: normalData, borderColor: '#00E5FF', backgroundColor: 'rgba(0,229,255,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
-        { label: 'Suspicious', data: susData, borderColor: '#B829EA', backgroundColor: 'rgba(184,41,234,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
-        { label: 'Attack', data: atkData, borderColor: '#FF3366', backgroundColor: 'rgba(255,51,102,0.08)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+        { label: 'Normal', data: Array(24).fill(0), borderColor: '#00E5FF', backgroundColor: 'rgba(0,229,255,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+        { label: 'Suspicious', data: Array(24).fill(0), borderColor: '#B829EA', backgroundColor: 'rgba(184,41,234,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+        { label: 'Attack', data: Array(24).fill(0), borderColor: '#FF3366', backgroundColor: 'rgba(255,51,102,0.08)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
       ]
     },
     options: {
@@ -131,6 +124,21 @@ if (timeCtx) {
   });
 }
 
+// Fetch real timeline data
+function updateTimeline() {
+  fetch('/admin/api/access-timeline').then(r => r.json()).then(data => {
+    if (timelineChart) {
+      timelineChart.data.labels = data.labels;
+      timelineChart.data.datasets[0].data = data.normal;
+      timelineChart.data.datasets[1].data = data.suspicious;
+      timelineChart.data.datasets[2].data = data.attack;
+      timelineChart.update();
+    }
+  }).catch(() => {});
+}
+updateTimeline();
+setInterval(updateTimeline, 10000);
+
 // Radar chart
 const radarCtx = document.getElementById('radarChart');
 let radarChart = null;
@@ -140,7 +148,7 @@ if (radarCtx) {
     data: {
       labels: ['Auth Fails', 'IP Diversity', 'Rate', 'User Agent', 'Time Pattern'],
       datasets: [{
-        data: [0.3, 0.2, 0.15, 0.1, 0.25],
+        data: [0, 0, 0, 0, 0],
         borderColor: '#00E5FF',
         backgroundColor: 'rgba(0,229,255,0.1)',
         borderWidth: 1.5,
@@ -163,21 +171,18 @@ if (radarCtx) {
   });
 }
 
-// Anomaly log mock data
-const anomalies = [
-  { time: '22:14:03', type: 'AUTH_FAIL', ip: '192.168.1.47', file: 'report.pdf', severity: 'attack', detail: 'Brute-force pattern: 200+ attempts in 60s' },
-  { time: '22:13:58', type: 'AUTH_FAIL', ip: '192.168.1.102', file: 'data.csv', severity: 'suspicious', detail: '12 failed attempts from new IP' },
-  { time: '22:12:41', type: 'AUTH_FAIL', ip: '10.0.0.15', file: 'config.json', severity: 'suspicious', detail: 'Unusual user agent detected' },
-  { time: '22:10:22', type: 'AUTH_FAIL', ip: '172.16.0.8', file: 'backup.zip', severity: 'attack', detail: 'Coordinated multi-IP attack pattern' },
-  { time: '22:08:15', type: 'AUTH_FAIL', ip: '192.168.1.200', file: 'secrets.env', severity: 'suspicious', detail: 'Access outside normal hours' },
-  { time: '22:05:33', type: 'DOWNLOAD', ip: '10.0.0.99', file: 'archive.tar', severity: 'suspicious', detail: 'Bulk download pattern detected' },
-  { time: '22:03:19', type: 'AUTH_FAIL', ip: '192.168.1.15', file: 'keys.pem', severity: 'attack', detail: 'Targeted high-value file access' },
-  { time: '22:01:07', type: 'AUTH_FAIL', ip: '172.16.0.44', file: 'database.sql', severity: 'suspicious', detail: 'Sequential file enumeration' },
-  { time: '21:58:44', type: 'AUTH_FAIL', ip: '10.0.0.201', file: 'wallet.dat', severity: 'attack', detail: 'Known attacker fingerprint' },
-  { time: '21:55:22', type: 'AUTH_FAIL', ip: '192.168.1.88', file: 'certs.pem', severity: 'suspicious', detail: 'Suspicious geolocation change' },
-];
-
+// Anomaly log — fetched from real API
+let anomalies = [];
 let currentFilter = 'all';
+
+function loadAnomalies() {
+  fetch('/admin/api/anomaly-log').then(r => r.json()).then(data => {
+    anomalies = data;
+    renderAnomalies();
+  }).catch(() => {
+    document.getElementById('anomaly-table').innerHTML = '<div class="text-center text-white/20 text-xs font-body py-8">No access log data yet. Simulate an attack from the Dashboard to generate events.</div>';
+  });
+}
 
 function renderAnomalies() {
   const container = document.getElementById('anomaly-table');
@@ -185,18 +190,18 @@ function renderAnomalies() {
     anomalies.filter(a => currentFilter === 'attack' ? a.severity === 'attack' : a.severity === 'suspicious');
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="text-center text-white/20 text-xs font-body py-8">No matching events</div>';
+    container.innerHTML = '<div class="text-center text-white/20 text-xs font-body py-8">No matching events. Simulate an attack from the Dashboard to generate data.</div>';
     return;
   }
 
   container.innerHTML = filtered.map((a, i) => {
-    const borderColor = a.severity === 'attack' ? '#FF3366' : '#B829EA';
+    const borderColor = a.severity === 'attack' ? '#FF3366' : a.severity === 'suspicious' ? '#B829EA' : '#00E5FF';
     const bgTint = i % 2 === 0 ? 'bg-white/[0.01]' : '';
     return `<div class="border-l-2 rounded-r-lg px-4 py-2.5 ${bgTint} cursor-pointer hover:bg-white/[0.03] transition" style="border-color:${borderColor}" onclick="this.querySelector('.expand-detail')?.classList.toggle('hidden')">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="text-[10px] font-mono text-white/30">${a.time}</span>
-          <span class="badge ${a.severity === 'attack' ? 'badge-red' : 'badge-purple'}">${a.type}</span>
+          <span class="badge ${a.severity === 'attack' ? 'badge-red' : a.severity === 'suspicious' ? 'badge-purple' : 'badge-cyan'}">${a.type}</span>
           <span class="text-xs font-mono text-white/50">${a.file}</span>
         </div>
         <span class="text-[10px] font-mono text-white/30">${a.ip}</span>
@@ -248,14 +253,15 @@ function updateML() {
         conf.attack * 2, conf.suspicious, conf.attack, conf.suspicious * 0.8, conf.normal * 0.3
       ];
       radarChart.data.datasets[0].borderColor = colors[label] || '#00E5FF';
-      radarChart.data.datasets[0].backgroundColor = (colors[label] || '#00E5FF').replace(')', ',0.1)');
+      radarChart.data.datasets[0].backgroundColor = (colors[label] || '#00E5FF') + '1a';
       radarChart.update();
     }
   }).catch(() => {});
 }
 
-renderAnomalies();
+loadAnomalies();
 updateML();
 setInterval(updateML, 5000);
+setInterval(loadAnomalies, 10000);
 </script>
 {% endblock %}

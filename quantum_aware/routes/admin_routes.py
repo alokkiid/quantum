@@ -429,3 +429,157 @@ def logs_export():
         headers={'Content-Disposition': 'attachment; filename=audit_log.csv'}
     )
 
+
+# ---------------------------------------------------------------------------
+# GET /api/access-timeline  — 24h access timeline from real access_logs
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/api/access-timeline')
+@require_role('admin')
+def access_timeline():
+    """Return hourly access counts for the last 24 hours, split by category."""
+    from datetime import timedelta
+    now = datetime.utcnow()
+    cutoff = (now - timedelta(hours=24)).isoformat()
+
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT timestamp, event_type FROM access_logs "
+            "WHERE timestamp >= ? ORDER BY timestamp",
+            (cutoff,)
+        ).fetchall()
+    finally:
+        conn.close()
+
+    # Build 24 hourly buckets
+    buckets = {h: {'normal': 0, 'suspicious': 0, 'attack': 0} for h in range(24)}
+    for r in rows:
+        try:
+            ts = r['timestamp']
+            # Parse hour from ISO timestamp
+            hour = int(ts[11:13]) if len(ts) > 13 else 0
+        except (ValueError, IndexError):
+            hour = 0
+
+        evt = r['event_type']
+        if evt == 'AUTH_FAIL':
+            buckets[hour]['attack'] += 1
+        elif evt == 'DOWNLOAD':
+            buckets[hour]['suspicious'] += 1
+        else:
+            buckets[hour]['normal'] += 1
+
+    labels = [f"{h:02d}:00" for h in range(24)]
+    return jsonify({
+        'labels': labels,
+        'normal': [buckets[h]['normal'] for h in range(24)],
+        'suspicious': [buckets[h]['suspicious'] for h in range(24)],
+        'attack': [buckets[h]['attack'] for h in range(24)],
+    })
+
+
+# ---------------------------------------------------------------------------
+# GET /api/anomaly-log  — real access_logs entries
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/api/anomaly-log')
+@require_role('admin')
+def anomaly_log():
+    """Return latest 50 access_log entries with file info."""
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT a.id, a.timestamp, a.event_type, a.source_ip, "
+            "       a.user_agent, a.ml_score, "
+            "       COALESCE(f.original_name, 'unknown') AS file_name "
+            "FROM access_logs a "
+            "LEFT JOIN files f ON a.file_id = f.id "
+            "ORDER BY a.timestamp DESC LIMIT 50"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    result = []
+    for r in rows:
+        evt = r['event_type']
+        # Classify severity
+        if evt == 'AUTH_FAIL':
+            severity = 'attack'
+        elif evt == 'DOWNLOAD':
+            severity = 'suspicious'
+        else:
+            severity = 'normal'
+
+        # Extract time portion from timestamp
+        ts = r['timestamp'] or ''
+        time_part = ts[11:19] if len(ts) > 19 else ts
+
+        result.append({
+            'time': time_part,
+            'type': evt,
+            'ip': r['source_ip'] or '0.0.0.0',
+            'file': r['file_name'],
+            'severity': severity,
+            'detail': f"Agent: {r['user_agent'] or 'N/A'}",
+        })
+
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/topology-data  — real file-based topology
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/api/topology-data')
+@require_role('admin')
+def topology_data():
+    """Return file nodes and key data for topology visualization."""
+    conn = get_db()
+    try:
+        files = conn.execute(
+            "SELECT f.id, f.original_name, f.encryption_state, f.current_key_id, "
+            "       f.file_size, f.created_at "
+            "FROM files f ORDER BY f.id"
+        ).fetchall()
+
+        nodes = []
+        for f in files:
+            # Get active key info
+            key_row = conn.execute(
+                "SELECT algorithm, created_at FROM encryption_keys "
+                "WHERE file_id = ? AND status = 'ACTIVE' ORDER BY id DESC LIMIT 1",
+                (f['id'],)
+            ).fetchone()
+
+            # Count total rotations for this file
+            rot_count = conn.execute(
+                "SELECT COUNT(*) FROM audit_trail "
+                "WHERE file_id = ? AND event_type = 'ROTATION'",
+                (f['id'],)
+            ).fetchone()[0]
+
+            # Map encryption state to status
+            state = f['encryption_state']
+            if state == 'CONT_ROTATION':
+                status = 'compromised'
+            elif state == 'AES-256':
+                status = 'suspicious'
+            else:
+                status = 'active'
+
+            nodes.append({
+                'id': f['id'],
+                'name': f['original_name'],
+                'status': status,
+                'algo': state,
+                'key_id': f['current_key_id'],
+                'rotations': rot_count,
+                'size': f['file_size'],
+                'last_rotation': key_row['created_at'] if key_row else 'N/A',
+            })
+    finally:
+        conn.close()
+
+    return jsonify({'nodes': nodes})
+
