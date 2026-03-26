@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard — Quantum-Aware Enterprise{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen" id="app-root">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
+    <div class="px-6 py-5 border-b border-white/[0.07]">
+      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+    </div>
+
+    <nav class="flex-1 py-4 px-3 space-y-1">
+      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+        File Matrix
+      </a>
+      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Threat Intelligence
+      </a>
+      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+        Crypto Topology
+      </a>
+
+      <div class="border-t border-white/[0.07] my-4"></div>
+
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        Profile
+      </a>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+      <div>
+        <div class="text-xs font-body text-white/80">{{ session.get('role','admin')|title }}</div>
+        <div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="ml-[240px] flex-1 min-h-screen">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07] header-tint">
+      <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-4">
+          <h1 class="font-heading text-lg font-bold">Dashboard</h1>
+          <span id="threat-badge" class="badge badge-cyan pulse-border">● NORMAL</span>
+          <span class="badge flex items-center gap-1.5" style="background:rgba(0,255,157,0.1);color:#00FF9D;">
+            <span class="w-1.5 h-1.5 rounded-full bg-state-green animate-blink"></span> LIVE
+          </span>
+        </div>
+        <div class="flex items-center gap-4">
+          <button class="relative text-white/40 hover:text-white transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Grid -->
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-10 gap-5">
+
+      <!-- ===== COL 1 (30%) ===== -->
+      <div class="lg:col-span-3 space-y-5">
+
+        <!-- Storage donut -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Storage Overview</h3>
+          <div class="flex justify-center">
+            <canvas id="storageChart" width="180" height="180"></canvas>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+            <div><div class="text-xs font-mono text-state-cyan" id="stat-aes128">0</div><div class="text-[9px] text-white/30">AES-128</div></div>
+            <div><div class="text-xs font-mono text-state-amber" id="stat-aes256">0</div><div class="text-[9px] text-white/30">AES-256</div></div>
+            <div><div class="text-xs font-mono text-state-red" id="stat-controt">0</div><div class="text-[9px] text-white/30">CONT_ROT</div></div>
+          </div>
+        </div>
+
+        <!-- System resources -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">System Resources</h3>
+          <div class="space-y-3 font-mono text-xs">
+            <div>
+              <div class="flex justify-between text-white/50 mb-1"><span>CPU</span><span>24%</span></div>
+              <div class="h-1.5 bg-white/[0.05] rounded-full"><div class="h-full bg-state-cyan rounded-full" style="width:24%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-white/50 mb-1"><span>MEMORY</span><span>41%</span></div>
+              <div class="h-1.5 bg-white/[0.05] rounded-full"><div class="h-full bg-state-purple rounded-full" style="width:41%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-white/50 mb-1"><span>DISK</span><span>18%</span></div>
+              <div class="h-1.5 bg-white/[0.05] rounded-full"><div class="h-full bg-state-green rounded-full" style="width:18%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload dropzone -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Quick Upload</h3>
+          <form id="admin-upload-form" enctype="multipart/form-data">
+            <label class="flex flex-col items-center justify-center h-24 border-2 border-dashed border-white/[0.07] rounded-xl cursor-pointer hover:border-state-cyan/30 transition group">
+              <svg class="w-6 h-6 text-white/20 group-hover:text-state-cyan/60 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <span class="text-[10px] text-white/30 mt-1 font-mono">Drop file or click</span>
+              <input type="file" name="file" class="hidden" onchange="document.getElementById('admin-upload-form').dispatchEvent(new Event('submit'))"/>
+            </label>
+          </form>
+        </div>
+      </div>
+
+      <!-- ===== COL 2 (40%) ===== -->
+      <div class="lg:col-span-4 space-y-5">
+
+        <!-- Threat level card -->
+        <div class="glass-card rounded-2xl p-8 text-center pulse-border" id="threat-card">
+          <div class="text-xs text-white/40 uppercase tracking-wider font-mono mb-2">Global Threat Level</div>
+          <div id="threat-text" class="text-5xl font-heading font-extrabold tracking-tight text-state-cyan">NORMAL</div>
+          <div id="threat-sub" class="text-sm text-white/40 font-body mt-2">All systems operating within parameters</div>
+        </div>
+
+        <!-- ML Confidence -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">ML Confidence Scores</h3>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs font-mono mb-1"><span class="text-state-cyan">NORMAL</span><span id="ml-normal">0.94</span></div>
+              <div class="h-2 bg-white/[0.05] rounded-full"><div id="ml-normal-bar" class="h-full bg-state-cyan rounded-full transition-all duration-700" style="width:94%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-mono mb-1"><span class="text-state-purple">SUSPICIOUS</span><span id="ml-suspicious">0.05</span></div>
+              <div class="h-2 bg-white/[0.05] rounded-full"><div id="ml-suspicious-bar" class="h-full bg-state-purple rounded-full transition-all duration-700" style="width:5%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-mono mb-1"><span class="text-state-red">ATTACK</span><span id="ml-attack">0.01</span></div>
+              <div class="h-2 bg-white/[0.05] rounded-full"><div id="ml-attack-bar" class="h-full bg-state-red rounded-full transition-all duration-700" style="width:1%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evasion loop counter -->
+        <div class="glass-card rounded-2xl p-6" id="evasion-card" style="border: 2px dashed rgba(255,51,102,0.2);">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-1">Evasion Loop</h3>
+              <div id="evasion-status" class="text-sm font-body text-white/50">Inactive — No active threats</div>
+            </div>
+            <div>
+              <div class="text-3xl font-heading font-bold text-white/20 font-mono" id="evasion-count">0</div>
+              <div class="text-[9px] text-white/30 text-center font-mono">LOOPS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COL 3 (30%) ===== -->
+      <div class="lg:col-span-3 space-y-5">
+
+        <!-- Key lifecycle feed -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Key Lifecycle</h3>
+          <div id="key-feed" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            <div class="text-center text-white/20 text-xs font-body py-8">No key events yet</div>
+          </div>
+        </div>
+
+        <!-- Recent alerts -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Recent Alerts</h3>
+          <div id="alerts-feed" class="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+            <div class="text-center text-white/20 text-xs font-body py-8">No alerts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========== DEMO CONTROLS ========== -->
+  <div class="fixed bottom-6 right-6 z-50 glass-card rounded-2xl p-4 w-[280px]" style="border: 1px solid rgba(255,255,255,0.1);">
+    <div class="text-[10px] text-white/40 uppercase tracking-wider font-mono mb-3">Demo Controls</div>
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-xs font-mono text-white/50">State:</span>
+      <span id="demo-state" class="badge badge-cyan font-mono">NORMAL</span>
+    </div>
+    <div class="space-y-2">
+      <button onclick="simulateAttack()" id="btn-attack"
+              class="w-full py-2 rounded-full bg-state-red/20 border border-state-red/30 text-state-red text-xs font-bold hover:bg-state-red/30 transition font-mono">
+        ⚡ SIMULATE ATTACK
+      </button>
+      <button onclick="stopAttack()" id="btn-stop"
+              class="w-full py-2 rounded-full bg-state-amber/20 border border-state-amber/30 text-state-amber text-xs font-bold hover:bg-state-amber/30 transition font-mono">
+        ■ STOP ATTACK
+      </button>
+      <button onclick="resetState()" id="btn-reset"
+              class="w-full py-2 rounded-full bg-white/[0.05] border border-white/[0.07] text-white/50 text-xs font-bold hover:bg-white/10 transition font-mono">
+        ↻ RESET ALL STATES
+      </button>
+    </div>
+    <div class="mt-3">
+      <label class="text-[10px] text-white/30 font-mono">File ID (auto-detected)</label>
+      <input id="demo-file-id" type="number" value="" min="1"
+             class="w-full bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs text-white font-mono mt-1 focus:outline-none focus:border-state-cyan/30"/>
+    </div>
+    <div class="mt-3">
+      <label class="text-[10px] text-white/30 font-mono block mb-1">Rotation Speed</label>
+      <div class="flex gap-1.5">
+        <button onclick="setSpeed(1)" id="speed-1x" class="speed-pill speed-active flex-1 py-1.5 rounded-full text-[10px] font-bold font-mono transition">1×</button>
+        <button onclick="setSpeed(2)" id="speed-2x" class="speed-pill flex-1 py-1.5 rounded-full text-[10px] font-bold font-mono transition">2×</button>
+        <button onclick="setSpeed(5)" id="speed-5x" class="speed-pill flex-1 py-1.5 rounded-full text-[10px] font-bold font-mono transition">5×</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const root = document.getElementById('app-root');
+
+// Storage donut chart
+const storageCtx = document.getElementById('storageChart');
+let storageChart = null;
+if (storageCtx) {
+  storageChart = new Chart(storageCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['AES-128', 'AES-256', 'CONT_ROT', 'Empty'],
+      datasets: [{
+        data: [0, 0, 0, 1],
+        backgroundColor: ['#00E5FF', '#FFB000', '#FF3366', 'rgba(255,255,255,0.03)'],
+        borderWidth: 0,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      responsive: false,
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// Key lifecycle entries
+let keyEvents = [];
+function addKeyEvent(type, keyId) {
+  const feed = document.getElementById('key-feed');
+  if (keyEvents.length === 0) feed.innerHTML = '';
+  const now = new Date().toLocaleTimeString();
+  const isCyan = type === 'GENERATED';
+  const div = document.createElement('div');
+  div.className = 'flex items-center justify-between py-1.5 px-2 rounded-lg ' + (isCyan ? 'bg-state-cyan/[0.05]' : 'bg-state-red/[0.05]');
+  div.innerHTML = `<span class="text-[10px] font-mono ${isCyan ? 'text-state-cyan' : 'text-state-red'}">${type}</span><span class="text-[10px] font-mono text-white/30">K-${String(keyId).padStart(4,'0')}</span><span class="text-[10px] font-mono text-white/20">${now}</span>`;
+  feed.prepend(div);
+  keyEvents.push({ type, keyId });
+  if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
+// Alert feed
+let alertCount = 0;
+function addAlert(text, color) {
+  const feed = document.getElementById('alerts-feed');
+  if (alertCount === 0) feed.innerHTML = '';
+  alertCount++;
+  const div = document.createElement('div');
+  div.className = `py-1.5 px-2 rounded-lg text-[10px] font-mono border-l-2`;
+  div.style.borderColor = color;
+  div.style.background = color.replace(')', ',0.05)').replace('rgb', 'rgba');
+  div.innerHTML = `<span style="color:${color}">${text}</span>`;
+  feed.prepend(div);
+  if (feed.children.length > 10) feed.removeChild(feed.lastChild);
+}
+
+// Update UI from status
+function updateDashboard(data) {
+  const level = data.global_threat_level;
+  const conf = data.ml_confidence;
+
+  // State class on body
+  document.body.className = document.body.className.replace(/state-\w+/g, '');
+  if (level === 'Attack') {
+    document.body.classList.add('state-attack');
+  } else if (level === 'Suspicious') {
+    document.body.classList.add('state-suspicious');
+  } else {
+    document.body.classList.add('state-normal');
+  }
+
+  // Threat badge
+  const badge = document.getElementById('threat-badge');
+  const demoBadge = document.getElementById('demo-state');
+  if (level === 'Attack') {
+    badge.className = 'badge badge-red pulse-border'; badge.textContent = '● ATTACK';
+    demoBadge.className = 'badge badge-red font-mono'; demoBadge.textContent = 'ATTACK';
+  } else if (level === 'Suspicious') {
+    badge.className = 'badge badge-purple pulse-border'; badge.textContent = '● SUSPICIOUS';
+    demoBadge.className = 'badge badge-purple font-mono'; demoBadge.textContent = 'SUSPICIOUS';
+  } else {
+    badge.className = 'badge badge-cyan pulse-border'; badge.textContent = '● NORMAL';
+    demoBadge.className = 'badge badge-cyan font-mono'; demoBadge.textContent = 'NORMAL';
+  }
+
+  // Threat text
+  const colors = { Normal: '#00E5FF', Suspicious: '#B829EA', Attack: '#FF3366' };
+  const subs = { Normal: 'All systems operating within parameters', Suspicious: 'Anomalous access patterns detected', Attack: 'Active threat — Evasion loop engaged' };
+  document.getElementById('threat-text').textContent = level.toUpperCase();
+  document.getElementById('threat-text').style.color = colors[level] || '#00E5FF';
+  document.getElementById('threat-sub').textContent = subs[level] || '';
+
+  // ML bars
+  if (conf) {
+    document.getElementById('ml-normal').textContent = conf.normal.toFixed(2);
+    document.getElementById('ml-suspicious').textContent = conf.suspicious.toFixed(2);
+    document.getElementById('ml-attack').textContent = conf.attack.toFixed(2);
+    document.getElementById('ml-normal-bar').style.width = (conf.normal * 100) + '%';
+    document.getElementById('ml-suspicious-bar').style.width = (conf.suspicious * 100) + '%';
+    document.getElementById('ml-attack-bar').style.width = (conf.attack * 100) + '%';
+  }
+
+  // Evasion card
+  const eCard = document.getElementById('evasion-card');
+  const eCount = document.getElementById('evasion-count');
+  const eStatus = document.getElementById('evasion-status');
+  if (data.active_loops > 0) {
+    eCard.style.border = '2px solid rgba(255,51,102,0.5)';
+    eCount.textContent = data.active_loops;
+    eCount.style.color = '#FF3366';
+    eStatus.textContent = 'ACTIVE — Rotating every 4s';
+    eStatus.style.color = '#FF3366';
+  } else {
+    eCard.style.border = '2px dashed rgba(255,51,102,0.2)';
+    eCount.textContent = '0';
+    eCount.style.color = 'rgba(255,255,255,0.2)';
+    eStatus.textContent = 'Inactive — No active threats';
+    eStatus.style.color = 'rgba(255,255,255,0.5)';
+  }
+
+  // Keys destroyed
+  if (data.keys_destroyed_total > 0)
+    addKeyEvent('DESTROYED', Math.floor(Math.random() * 9000 + 1000));
+  if (data.rotation_rate_per_minute > 0)
+    addKeyEvent('GENERATED', Math.floor(Math.random() * 9000 + 1000));
+}
+
+// Poll /api/status
+function pollStatus() {
+  fetch('/admin/api/status')
+    .then(r => r.json())
+    .then(data => {
+      updateDashboard(data);
+
+      // Update storage chart
+      fetch('/admin/files/data')
+        .then(r => r.json())
+        .then(files => {
+          let a128 = 0, a256 = 0, cr = 0;
+          files.forEach(f => {
+            if (f.encryption_state === 'AES-128') a128++;
+            else if (f.encryption_state === 'AES-256') a256++;
+            else if (f.encryption_state === 'CONT_ROTATION') cr++;
+          });
+          document.getElementById('stat-aes128').textContent = a128;
+          document.getElementById('stat-aes256').textContent = a256;
+          document.getElementById('stat-controt').textContent = cr;
+          if (storageChart) {
+            const total = a128 + a256 + cr;
+            storageChart.data.datasets[0].data = total > 0 ? [a128, a256, cr, 0] : [0, 0, 0, 1];
+            storageChart.update();
+          }
+        }).catch(() => {});
+    })
+    .catch(err => console.log('Poll error:', err));
+}
+
+pollStatus();
+setInterval(pollStatus, 5000);
+
+// Demo controls — auto-detect first available file
+function autoDetectFileId() {
+  fetch('/admin/files/data')
+    .then(r => r.json())
+    .then(files => {
+      if (files.length > 0) {
+        document.getElementById('demo-file-id').value = files[0].id;
+      }
+    }).catch(() => {});
+}
+autoDetectFileId();
+
+function getFileId() {
+  const v = document.getElementById('demo-file-id').value;
+  if (!v) { addAlert('No file available — upload a file first', '#FFB000'); return null; }
+  return parseInt(v);
+}
+
+function simulateAttack() {
+  const fileId = getFileId();
+  if (!fileId) return;
+  fetch('/admin/api/simulate/attack', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_id: fileId, intensity: 'high' })
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      addAlert('Attack simulation started (file ' + fileId + ')', '#FF3366');
+    } else {
+      addAlert('Error: ' + (d.error || 'unknown'), '#FFB000');
+    }
+    pollStatus();
+  }).catch(e => addAlert('Error: ' + e.message, '#FF3366'));
+}
+
+function stopAttack() {
+  const fileId = getFileId();
+  if (!fileId) return;
+  fetch('/admin/api/simulate/stop', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_id: fileId })
+  }).then(r => r.json()).then(d => {
+    addAlert('Attack simulation stopped', '#FFB000');
+    pollStatus();
+  }).catch(e => addAlert('Error: ' + e.message, '#FFB000'));
+}
+
+function resetState() {
+  fetch('/admin/api/simulate/reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      addAlert('All states reset to AES-128, logs cleared', '#00E5FF');
+      pollStatus();
+      autoDetectFileId();
+    } else {
+      addAlert('Reset failed', '#FF3366');
+    }
+  }).catch(e => addAlert('Error: ' + e.message, '#FF3366'));
+}
+
+function setSpeed(multiplier) {
+  fetch('/admin/api/config/rotation-speed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ multiplier: multiplier })
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      document.querySelectorAll('.speed-pill').forEach(b => b.classList.remove('speed-active'));
+      document.getElementById('speed-' + multiplier + 'x').classList.add('speed-active');
+      addAlert('Rotation speed set to ' + multiplier + '× (' + d.interval + 's)', '#00E5FF');
+    }
+  }).catch(e => addAlert('Error: ' + e.message, '#FF3366'));
+}
+</script>
+
+<style>
+.speed-pill { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); color: rgba(255,255,255,0.4); cursor: pointer; }
+.speed-pill:hover { background: rgba(255,255,255,0.08); }
+.speed-pill.speed-active { background: rgba(0,229,255,0.15); border-color: rgba(0,229,255,0.4); color: #00E5FF; }
+</style>
+{% endblock %}

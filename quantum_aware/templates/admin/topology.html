@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Crypto Topology — Quantum-Aware Enterprise{% endblock %}
+
+{% block head %}
+<style>
+  .hex-node { cursor: pointer; transition: all 0.3s; }
+  .hex-node:hover { filter: brightness(1.3); }
+  .tooltip-card {
+    position: absolute; z-index: 100; pointer-events: none;
+    background: rgba(15,15,30,0.95); border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px); border-radius: 12px; padding: 12px 16px;
+    opacity: 0; transition: opacity 0.2s; min-width: 180px;
+  }
+  .tooltip-card.show { opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
+    <div class="px-6 py-5 border-b border-white/[0.07]">
+      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+    </div>
+    <nav class="flex-1 py-4 px-3 space-y-1">
+      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+        File Matrix
+      </a>
+      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Threat Intelligence
+      </a>
+      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+        Crypto Topology
+      </a>
+      <div class="border-t border-white/[0.07] my-4"></div>
+    </nav>
+    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+      <div><div class="text-xs font-body text-white/80">Admin</div><div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div></div>
+    </div>
+  </aside>
+
+  <main class="ml-[240px] flex-1 min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07]">
+      <div class="flex items-center justify-between px-6 py-4">
+        <h1 class="font-heading text-lg font-bold">Crypto Topology</h1>
+        <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+      </div>
+    </header>
+
+    <div class="p-6 relative" style="min-height: calc(100vh - 65px);">
+
+      <!-- Legend -->
+      <div class="absolute top-8 right-8 z-20 glass-card rounded-xl p-4">
+        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-3">Legend</div>
+        <div class="space-y-2 text-[10px] font-mono">
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#00E5FF; box-shadow:0 0 8px rgba(0,229,255,0.5)"></div><span class="text-white/60">Genesis Node</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-cyan bg-transparent"></div><span class="text-white/60">Active</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-purple bg-transparent"></div><span class="text-white/60">Suspicious</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-red bg-transparent"></div><span class="text-white/60">Compromised</span></div>
+        </div>
+      </div>
+
+      <!-- Entropy stream -->
+      <div class="absolute top-8 right-8 mt-44 z-20 glass-card rounded-xl p-4 w-[200px]">
+        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Entropy Stream</div>
+        <div id="entropy-stream" class="font-mono text-[10px] text-state-cyan/60 leading-relaxed break-all h-16 overflow-hidden"></div>
+      </div>
+
+      <!-- Node health table -->
+      <div class="absolute bottom-8 left-8 z-20 glass-card rounded-xl p-4 w-[280px]">
+        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-3">Node Health</div>
+        <table class="w-full text-[10px] font-mono">
+          <thead><tr class="text-white/30"><th class="text-left pb-2">NODE</th><th class="text-left pb-2">STATUS</th><th class="text-left pb-2">LOAD</th><th class="text-left pb-2">ALGO</th></tr></thead>
+          <tbody id="health-tbody">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Rotation rate -->
+      <div class="absolute bottom-8 right-8 z-20 glass-card rounded-xl p-4 text-center">
+        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-1">Rotation Rate</div>
+        <div id="rotation-rate" class="text-4xl font-heading font-extrabold text-state-cyan">0</div>
+        <div class="text-[9px] font-mono text-white/30">keys/min</div>
+      </div>
+
+      <!-- SVG Node Map -->
+      <svg id="topo-svg" viewBox="0 0 900 600" class="w-full h-full" style="min-height: 500px;">
+        <defs>
+          <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Edges (drawn first) -->
+        <g id="edges"></g>
+
+        <!-- Nodes -->
+        <g id="nodes"></g>
+      </svg>
+
+      <!-- Tooltip -->
+      <div id="node-tooltip" class="tooltip-card">
+        <div class="text-[10px] font-mono text-white/30 uppercase mb-1">Node Info</div>
+        <div id="tt-id" class="text-xs font-mono font-bold text-white mb-1"></div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
+          <span class="text-white/30">Load:</span><span id="tt-load" class="text-white/60"></span>
+          <span class="text-white/30">Algorithm:</span><span id="tt-algo" class="text-white/60"></span>
+          <span class="text-white/30">Last Rotation:</span><span id="tt-rotation" class="text-white/60"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const nodes = [
+  { id: 'GENESIS', x: 450, y: 300, r: 32, status: 'genesis', load: 12, algo: 'AES-256', lastRot: '2s ago' },
+  { id: 'NODE-A1', x: 250, y: 150, r: 24, status: 'active', load: 23, algo: 'AES-128', lastRot: '45s ago' },
+  { id: 'NODE-A2', x: 650, y: 150, r: 24, status: 'active', load: 18, algo: 'AES-128', lastRot: '30s ago' },
+  { id: 'NODE-B1', x: 150, y: 300, r: 24, status: 'active', load: 31, algo: 'AES-128', lastRot: '1m ago' },
+  { id: 'NODE-B2', x: 750, y: 300, r: 24, status: 'active', load: 8, algo: 'AES-128', lastRot: '15s ago' },
+  { id: 'NODE-C1', x: 250, y: 450, r: 24, status: 'active', load: 45, algo: 'AES-256', lastRot: '10s ago' },
+  { id: 'NODE-C2', x: 650, y: 450, r: 24, status: 'active', load: 14, algo: 'AES-128', lastRot: '50s ago' },
+  { id: 'NODE-D1', x: 350, y: 180, r: 22, status: 'active', load: 27, algo: 'AES-128', lastRot: '25s ago' },
+  { id: 'NODE-D2', x: 550, y: 180, r: 22, status: 'active', load: 19, algo: 'AES-128', lastRot: '40s ago' },
+  { id: 'NODE-D3', x: 350, y: 420, r: 22, status: 'suspicious', load: 67, algo: 'AES-256', lastRot: '5s ago' },
+  { id: 'NODE-D4', x: 550, y: 420, r: 22, status: 'compromised', load: 92, algo: 'CONT_ROT', lastRot: '1s ago' },
+  { id: 'NODE-E1', x: 450, y: 500, r: 20, status: 'active', load: 11, algo: 'AES-128', lastRot: '55s ago' },
+];
+
+const edges = [
+  ['GENESIS', 'NODE-A1'], ['GENESIS', 'NODE-A2'], ['GENESIS', 'NODE-B1'], ['GENESIS', 'NODE-B2'],
+  ['GENESIS', 'NODE-D1'], ['GENESIS', 'NODE-D2'],
+  ['NODE-A1', 'NODE-D1'], ['NODE-A2', 'NODE-D2'],
+  ['NODE-B1', 'NODE-C1'], ['NODE-B2', 'NODE-C2'],
+  ['NODE-C1', 'NODE-D3'], ['NODE-C2', 'NODE-D4'],
+  ['NODE-D3', 'NODE-E1'], ['NODE-D4', 'NODE-E1'],
+  ['GENESIS', 'NODE-C1'], ['GENESIS', 'NODE-C2'],
+];
+
+function hexPoints(cx, cy, r) {
+  return Array.from({length: 6}, (_, i) => {
+    const angle = Math.PI / 6 + (i * Math.PI / 3);
+    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+  }).join(' ');
+}
+
+// Draw edges
+const edgeGroup = document.getElementById('edges');
+edges.forEach(([from, to]) => {
+  const a = nodes.find(n => n.id === from);
+  const b = nodes.find(n => n.id === to);
+  if (!a || !b) return;
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+  line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+  line.setAttribute('stroke', 'rgba(0,229,255,0.15)');
+  line.setAttribute('stroke-width', '1');
+  line.setAttribute('stroke-dasharray', '4 4');
+  line.classList.add('animate-dash');
+  edgeGroup.appendChild(line);
+});
+
+// Draw nodes
+const nodeGroup = document.getElementById('nodes');
+nodes.forEach(n => {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.classList.add('hex-node');
+
+  const colors = {
+    genesis: '#00E5FF', active: '#00E5FF',
+    suspicious: '#B829EA', compromised: '#FF3366'
+  };
+  const color = colors[n.status];
+  const fillOpacity = n.status === 'genesis' ? '0.15' : '0.05';
+  const filter = n.status === 'genesis' ? 'url(#glow-cyan)' : n.status === 'compromised' ? 'url(#glow-red)' : '';
+
+  // Compromised rings
+  if (n.status === 'compromised') {
+    const ring1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ring1.setAttribute('cx', n.x); ring1.setAttribute('cy', n.y); ring1.setAttribute('r', n.r + 5);
+    ring1.setAttribute('fill', 'none'); ring1.setAttribute('stroke', '#FF3366'); ring1.setAttribute('stroke-width', '1'); ring1.setAttribute('opacity', '0.5');
+    ring1.classList.add('animate-ring');
+    g.appendChild(ring1);
+    const ring2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ring2.setAttribute('cx', n.x); ring2.setAttribute('cy', n.y); ring2.setAttribute('r', n.r + 5);
+    ring2.setAttribute('fill', 'none'); ring2.setAttribute('stroke', '#FF3366'); ring2.setAttribute('stroke-width', '1'); ring2.setAttribute('opacity', '0.3');
+    ring2.classList.add('animate-ring-delay');
+    g.appendChild(ring2);
+  }
+
+  const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  hex.setAttribute('points', hexPoints(n.x, n.y, n.r));
+  hex.setAttribute('fill', `rgba(${hexToRgb(color)},${fillOpacity})`);
+  hex.setAttribute('stroke', color);
+  hex.setAttribute('stroke-width', n.status === 'genesis' ? '2' : '1.5');
+  if (filter) hex.setAttribute('filter', filter);
+  g.appendChild(hex);
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', n.x); text.setAttribute('y', n.y + 3);
+  text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', color);
+  text.setAttribute('font-family', 'JetBrains Mono'); text.setAttribute('font-size', n.r > 28 ? '8' : '7');
+  text.setAttribute('opacity', '0.8');
+  text.textContent = n.id.replace('NODE-', '');
+  g.appendChild(text);
+
+  // Tooltip
+  g.addEventListener('mouseenter', (e) => {
+    const tooltip = document.getElementById('node-tooltip');
+    document.getElementById('tt-id').textContent = n.id;
+    document.getElementById('tt-load').textContent = n.load + '%';
+    document.getElementById('tt-algo').textContent = n.algo;
+    document.getElementById('tt-rotation').textContent = n.lastRot;
+    tooltip.style.left = (e.clientX + 15) + 'px';
+    tooltip.style.top = (e.clientY - 20) + 'px';
+    tooltip.classList.add('show');
+  });
+  g.addEventListener('mousemove', (e) => {
+    const tooltip = document.getElementById('node-tooltip');
+    tooltip.style.left = (e.clientX + 15) + 'px';
+    tooltip.style.top = (e.clientY - 20) + 'px';
+  });
+  g.addEventListener('mouseleave', () => {
+    document.getElementById('node-tooltip').classList.remove('show');
+  });
+
+  nodeGroup.appendChild(g);
+});
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `${r},${g},${b}`;
+}
+
+// Health table
+const tbody = document.getElementById('health-tbody');
+nodes.slice(0, 6).forEach(n => {
+  const statusColors = { genesis: 'text-state-cyan', active: 'text-state-green', suspicious: 'text-state-purple', compromised: 'text-state-red' };
+  const tr = document.createElement('tr');
+  tr.className = 'border-t border-white/[0.04]';
+  tr.innerHTML = `<td class="py-1.5 text-white/50">${n.id}</td><td class="${statusColors[n.status]}">${n.status.toUpperCase()}</td><td class="text-white/40">${n.load}%</td><td class="text-white/40">${n.algo}</td>`;
+  tbody.appendChild(tr);
+});
+
+// Entropy stream
+function updateEntropy() {
+  const el = document.getElementById('entropy-stream');
+  const chars = '0123456789abcdef';
+  let hex = '';
+  for (let i = 0; i < 64; i++) hex += chars[Math.floor(Math.random() * 16)];
+  el.textContent = hex;
+}
+setInterval(updateEntropy, 800);
+updateEntropy();
+
+// Rotation rate from API
+function updateRate() {
+  fetch('/admin/api/status').then(r => r.json()).then(d => {
+    document.getElementById('rotation-rate').textContent = d.rotation_rate_per_minute || 0;
+  }).catch(() => {});
+}
+updateRate();
+setInterval(updateRate, 5000);
+</script>
+{% endblock %}

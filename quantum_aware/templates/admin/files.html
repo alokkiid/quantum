@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}File Matrix — Quantum-Aware Enterprise{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen">
+  <!-- SIDEBAR (same as dashboard) -->
+  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
+    <div class="px-6 py-5 border-b border-white/[0.07]">
+      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+    </div>
+    <nav class="flex-1 py-4 px-3 space-y-1">
+      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+        File Matrix
+      </a>
+      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Threat Intelligence
+      </a>
+      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+        Crypto Topology
+      </a>
+      <div class="border-t border-white/[0.07] my-4"></div>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </a>
+    </nav>
+    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+      <div>
+        <div class="text-xs font-body text-white/80">Admin</div>
+        <div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="ml-[240px] flex-1 min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07]">
+      <div class="flex items-center justify-between px-6 py-4">
+        <h1 class="font-heading text-lg font-bold">File Matrix</h1>
+        <div class="flex items-center gap-4">
+          <button class="relative text-white/40 hover:text-white transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="p-6">
+      <!-- Action bar -->
+      <div class="flex flex-wrap items-center gap-3 mb-6">
+        <label class="px-5 py-2 rounded-full bg-state-cyan/20 border border-state-cyan/30 text-state-cyan text-xs font-bold hover:bg-state-cyan/30 transition cursor-pointer font-mono">
+          ↑ UPLOAD DATA
+          <input type="file" class="hidden" id="file-upload-input" />
+        </label>
+        <button onclick="forceRotateAll()" class="px-5 py-2 rounded-full bg-state-amber/20 border border-state-amber/30 text-state-amber text-xs font-bold hover:bg-state-amber/30 transition font-mono">
+          ⟳ FORCE ROTATION
+        </button>
+        <button class="px-5 py-2 rounded-full bg-state-red/20 border border-state-red/30 text-state-red text-xs font-bold hover:bg-state-red/30 transition font-mono">
+          ✕ PURGE CACHE
+        </button>
+        <div class="flex-1"></div>
+        <input id="search-input" type="text" placeholder="Search files..."
+               class="bg-white/[0.04] border border-white/[0.07] rounded-lg px-4 py-2 text-xs text-white font-mono w-48 focus:outline-none focus:border-state-cyan/30" oninput="filterTable()"/>
+        <select id="filter-select" onchange="filterTable()"
+                class="bg-white/[0.04] border border-white/[0.07] rounded-lg px-4 py-2 text-xs text-white font-mono focus:outline-none">
+          <option value="all">All Files</option>
+          <option value="AES-128">AES-128</option>
+          <option value="AES-256">AES-256</option>
+          <option value="CONT_ROTATION">CONT_ROTATION</option>
+        </select>
+      </div>
+
+      <!-- File table -->
+      <div class="glass-card rounded-2xl overflow-hidden">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-white/[0.07] text-white/30 uppercase tracking-wider">
+              <th class="text-left px-4 py-3">FILE_ID</th>
+              <th class="text-left px-4 py-3">NAME</th>
+              <th class="text-left px-4 py-3">SIZE</th>
+              <th class="text-left px-4 py-3">ENCRYPTION</th>
+              <th class="text-left px-4 py-3">UPLOADED</th>
+              <th class="text-left px-4 py-3">FINGERPRINT</th>
+              <th class="text-left px-4 py-3">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="file-tbody">
+            <tr><td colspan="7" class="text-center text-white/20 py-12 font-body">Loading files...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4">
+        <span id="page-info" class="text-xs text-white/30 font-mono"></span>
+        <div class="flex gap-2" id="page-buttons"></div>
+      </div>
+    </div>
+
+    <!-- Upload pipeline drawer -->
+    <div id="upload-drawer" class="fixed top-0 right-0 h-full w-[320px] bg-surface border-l border-white/[0.07] z-50 transform translate-x-full transition-transform duration-500">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-heading text-sm font-bold">Upload Pipeline</h3>
+          <button onclick="closeDrawer()" class="text-white/30 hover:text-white">&times;</button>
+        </div>
+        <div id="pipeline-stages" class="space-y-4">
+          <div class="flex items-center gap-3" data-stage="hash"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">HASHING</div><div class="text-[10px] text-white/30">Computing SHA-256</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
+          <div class="flex items-center gap-3" data-stage="chunk"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">CHUNKING</div><div class="text-[10px] text-white/30">Segmenting data</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
+          <div class="flex items-center gap-3" data-stage="encrypt"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">ENCRYPTING</div><div class="text-[10px] text-white/30">AES-128-GCM</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
+          <div class="flex items-center gap-3" data-stage="store"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">STORING</div><div class="text-[10px] text-white/30">Vault insertion</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
+        </div>
+        <div class="mt-6 h-1.5 bg-white/[0.05] rounded-full"><div id="pipeline-bar" class="h-full bg-state-cyan rounded-full transition-all duration-500" style="width:0"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allFiles = [];
+let currentPage = 1;
+const perPage = 8;
+
+function loadFiles() {
+  fetch('/admin/files/data').then(r => r.json()).then(files => {
+    allFiles = files;
+    filterTable();
+  }).catch(() => {
+    document.getElementById('file-tbody').innerHTML = '<tr><td colspan="7" class="text-center text-white/20 py-12 font-body">No files found</td></tr>';
+  });
+}
+
+function filterTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const filter = document.getElementById('filter-select').value;
+  let filtered = allFiles.filter(f => {
+    const matchSearch = !search || f.original_name.toLowerCase().includes(search) || String(f.id).includes(search);
+    const matchFilter = filter === 'all' || f.encryption_state === filter;
+    return matchSearch && matchFilter;
+  });
+  currentPage = 1;
+  renderTable(filtered);
+}
+
+function renderTable(files) {
+  const tbody = document.getElementById('file-tbody');
+  const totalPages = Math.ceil(files.length / perPage) || 1;
+  const start = (currentPage - 1) * perPage;
+  const pageFiles = files.slice(start, start + perPage);
+
+  if (pageFiles.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white/20 py-12 font-body">No files match your filter</td></tr>';
+  } else {
+    tbody.innerHTML = pageFiles.map(f => {
+      const isCR = f.encryption_state === 'CONT_ROTATION';
+      const borderClass = isCR ? 'border-l-[3px] border-l-state-red' : '';
+      const badgeCls = f.encryption_state === 'AES-128' ? 'badge-cyan' : f.encryption_state === 'AES-256' ? 'badge-amber' : 'badge-red';
+      const dotAnim = f.encryption_state === 'AES-256' ? ' animate-pulse' : isCR ? ' animate-spin-slow' : '';
+      const fp = f.sha256_fingerprint ? f.sha256_fingerprint.substring(0, 12) + '...' : 'N/A';
+      return `<tr class="border-b border-white/[0.04] hover:bg-white/[0.02] cursor-pointer transition ${borderClass}" onclick="toggleRow(this, ${f.id})">
+        <td class="px-4 py-3 text-white/50">#${f.id}</td>
+        <td class="px-4 py-3 text-white/80">${f.original_name}</td>
+        <td class="px-4 py-3 text-white/50">${formatSize(f.file_size)}</td>
+        <td class="px-4 py-3"><span class="badge ${badgeCls}"><span class="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1${dotAnim}"></span>${f.encryption_state}</span></td>
+        <td class="px-4 py-3 text-white/40">${f.created_at || 'N/A'}</td>
+        <td class="px-4 py-3 text-white/30">${fp}</td>
+        <td class="px-4 py-3">
+          <button onclick="event.stopPropagation(); rotateFile(${f.id})" class="px-3 py-1 rounded-full border border-state-amber/30 text-state-amber text-[10px] hover:bg-state-amber/10 transition mr-1">Rotate</button>
+          <button onclick="event.stopPropagation(); isolateFile(${f.id})" class="px-3 py-1 rounded-full border border-state-red/30 text-state-red text-[10px] hover:bg-state-red/10 transition">Isolate</button>
+        </td>
+      </tr>
+      <tr class="hidden expand-row" id="expand-${f.id}"><td colspan="7" class="px-4 py-3 bg-white/[0.01]">
+        <div class="grid grid-cols-4 gap-4 text-[10px]">
+          <div><span class="text-white/30">SHA-256:</span><br><span class="text-white/50">${f.sha256_fingerprint || 'N/A'}</span></div>
+          <div><span class="text-white/30">KEY ID:</span><br><span class="text-state-cyan">${f.current_key_id || 'N/A'}</span></div>
+          <div><span class="text-white/30">OWNER:</span><br><span class="text-white/50">${f.user_email || 'N/A'}</span></div>
+          <div><span class="text-white/30">STORED:</span><br><span class="text-white/50">${f.created_at || 'N/A'}</span></div>
+        </div>
+      </td></tr>`;
+    }).join('');
+  }
+
+  document.getElementById('page-info').textContent = `Showing ${start + 1}–${Math.min(start + perPage, files.length)} of ${files.length} files`;
+  const btns = document.getElementById('page-buttons');
+  btns.innerHTML = '';
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = `px-3 py-1 rounded-lg text-xs font-mono ${i === currentPage ? 'bg-state-cyan/20 text-state-cyan' : 'bg-white/[0.04] text-white/40 hover:text-white'}`;
+    btn.textContent = i;
+    btn.onclick = () => { currentPage = i; renderTable(files); };
+    btns.appendChild(btn);
+  }
+}
+
+function toggleRow(row, id) {
+  const expand = document.getElementById('expand-' + id);
+  if (expand) expand.classList.toggle('hidden');
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
+  return bytes.toFixed(1) + ' ' + units[i];
+}
+
+function rotateFile(id) {
+  fetch('/admin/rotate/' + id, { method: 'POST' }).then(r => r.json()).then(() => loadFiles());
+}
+
+function isolateFile(id) {
+  fetch('/admin/api/isolate/' + id, { method: 'POST' }).then(r => r.json()).then(() => loadFiles());
+}
+
+function forceRotateAll() {
+  allFiles.forEach(f => rotateFile(f.id));
+}
+
+// Upload handling
+document.getElementById('file-upload-input').addEventListener('change', function() {
+  if (!this.files[0]) return;
+  const drawer = document.getElementById('upload-drawer');
+  drawer.classList.remove('translate-x-full');
+
+  const formData = new FormData();
+  formData.append('file', this.files[0]);
+
+  // Animate pipeline
+  const stages = ['hash', 'chunk', 'encrypt', 'store'];
+  const bar = document.getElementById('pipeline-bar');
+  let si = 0;
+  const interval = setInterval(() => {
+    if (si >= stages.length) { clearInterval(interval); return; }
+    const stageEl = document.querySelector(`[data-stage="${stages[si]}"]`);
+    stageEl.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-cyan animate-pulse';
+    stageEl.querySelector('.badge').textContent = 'ACTIVE';
+    stageEl.querySelector('.badge').className = 'ml-auto badge badge-cyan text-[9px]';
+    if (si > 0) {
+      const prev = document.querySelector(`[data-stage="${stages[si-1]}"]`);
+      prev.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-green';
+      prev.querySelector('.badge').textContent = 'DONE';
+      prev.querySelector('.badge').className = 'ml-auto badge badge-green text-[9px]';
+    }
+    bar.style.width = ((si + 1) / stages.length * 100) + '%';
+    si++;
+  }, 600);
+
+  // Actual upload
+  fetch('/user/upload', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(d => {
+      setTimeout(() => {
+        const last = document.querySelector(`[data-stage="store"]`);
+        last.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-green';
+        last.querySelector('.badge').textContent = 'DONE';
+        last.querySelector('.badge').className = 'ml-auto badge badge-green text-[9px]';
+        bar.style.width = '100%';
+        loadFiles();
+      }, 2400);
+    }).catch(e => console.error(e));
+});
+
+function closeDrawer() {
+  document.getElementById('upload-drawer').classList.add('translate-x-full');
+}
+
+loadFiles();
+</script>
+{% endblock %}

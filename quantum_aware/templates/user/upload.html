@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Upload — Quantum-Aware Enterprise{% endblock %}
+
+{% block content %}
+<!-- Top navbar -->
+<nav class="fixed top-0 w-full z-50 bg-black/40 backdrop-blur-xl border-b border-white/[0.07]" style="box-shadow: inset 0px 1px 0px rgba(255,255,255,0.05);">
+  <div class="flex justify-between items-center px-6 md:px-12 py-4 max-w-[1440px] mx-auto w-full">
+    <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+    <div class="flex items-center gap-6 text-sm font-body">
+      <a href="{{ url_for('user.files') }}" class="text-white/50 hover:text-white transition-colors">My Files</a>
+      <a href="{{ url_for('user.upload_page') }}" class="text-white font-semibold">Upload</a>
+      <a href="{{ url_for('logout') }}" class="text-white/40 hover:text-white transition-colors">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 md:px-12 max-w-3xl mx-auto">
+  <!-- Page header -->
+  <div class="mb-8 text-center">
+    <h1 class="font-heading text-3xl md:text-4xl font-extrabold tracking-tight"><span class="text-gradient">Upload & Encrypt</span></h1>
+    <p class="text-white/40 text-sm font-body mt-2">Files are encrypted with AES-128-GCM before being stored in the vault</p>
+  </div>
+
+  <!-- Upload dropzone -->
+  <div id="dropzone-area">
+    <form id="upload-form" enctype="multipart/form-data">
+      <label id="dropzone" class="flex flex-col items-center justify-center h-64 w-full max-w-[600px] mx-auto border-2 border-dashed border-white/[0.1] rounded-2xl cursor-pointer hover:border-state-cyan/40 transition-all duration-300 group glass-card">
+        <svg class="w-12 h-12 text-white/15 group-hover:text-state-cyan/40 transition-colors mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <div class="text-sm text-white/30 font-body mb-1">Drag & drop your file here</div>
+        <div class="text-[10px] text-white/20 font-mono">or click to browse • Max 100MB</div>
+        <input type="file" name="file" class="hidden" id="file-input" />
+      </label>
+    </form>
+  </div>
+
+  <!-- File validation error -->
+  <div id="file-error" class="hidden mt-4 text-center">
+    <div class="inline-block bg-state-red/10 border border-state-red/30 rounded-lg px-6 py-3 text-sm text-state-red font-body" id="error-text"></div>
+  </div>
+
+  <!-- Pipeline panel (hidden until file selected) -->
+  <div id="pipeline-panel" class="hidden mt-8 glass-card rounded-2xl p-8 max-w-[600px] mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-heading text-sm font-bold">Encryption Pipeline</h3>
+      <span id="pipeline-filename" class="text-xs font-mono text-white/30"></span>
+    </div>
+
+    <div class="space-y-5">
+      <div class="flex items-center gap-4" id="stage-hash">
+        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
+        <div class="flex-1">
+          <div class="text-xs font-mono font-bold">HASHING</div>
+          <div class="text-[10px] text-white/30 font-body">Computing SHA-256 fingerprint</div>
+        </div>
+        <span class="stage-tag badge text-[9px]">WAITING</span>
+        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
+      </div>
+      <div class="flex items-center gap-4" id="stage-chunk">
+        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
+        <div class="flex-1">
+          <div class="text-xs font-mono font-bold">CHUNKING</div>
+          <div class="text-[10px] text-white/30 font-body">Segmenting file data</div>
+        </div>
+        <span class="stage-tag badge text-[9px]">WAITING</span>
+        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
+      </div>
+      <div class="flex items-center gap-4" id="stage-encrypt">
+        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
+        <div class="flex-1">
+          <div class="text-xs font-mono font-bold">ENCRYPTING</div>
+          <div class="text-[10px] text-white/30 font-body">AES-128-GCM encryption</div>
+        </div>
+        <span class="stage-tag badge text-[9px]">WAITING</span>
+        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
+      </div>
+      <div class="flex items-center gap-4" id="stage-store">
+        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
+        <div class="flex-1">
+          <div class="text-xs font-mono font-bold">STORING</div>
+          <div class="text-[10px] text-white/30 font-body">Writing to encrypted vault</div>
+        </div>
+        <span class="stage-tag badge text-[9px]">WAITING</span>
+        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="mt-6 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+      <div id="progress-bar" class="h-full bg-gradient-to-r from-state-cyan to-state-green rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+    <div class="mt-2 text-center">
+      <span id="progress-text" class="text-[10px] font-mono text-white/30">0%</span>
+    </div>
+  </div>
+
+  <!-- Success state (hidden) -->
+  <div id="success-panel" class="hidden mt-8 glass-card rounded-2xl p-8 max-w-[600px] mx-auto text-center" style="border: 1px solid rgba(0,255,157,0.2);">
+    <div class="w-16 h-16 rounded-full bg-state-green/10 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-state-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <h3 class="font-heading text-xl font-bold text-state-green mb-2">File Encrypted & Stored</h3>
+    <p class="text-white/40 text-sm font-body mb-4">Your file has been secured in the Quantum Vault</p>
+    <div class="glass-card rounded-xl p-4 mb-6 text-left space-y-2">
+      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">SHA-256</span><span id="success-hash" class="text-white/60"></span></div>
+      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">KEY ID</span><span id="success-key" class="text-state-cyan"></span></div>
+      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">ENCRYPTION</span><span class="badge badge-cyan">AES-128</span></div>
+    </div>
+    <div class="flex gap-3 justify-center">
+      <button onclick="resetUpload()" class="px-6 py-2.5 rounded-full border border-white/[0.1] text-white/60 text-sm font-body hover:bg-white/[0.03] transition">Upload Another</button>
+      <a href="{{ url_for('user.files') }}" class="px-6 py-2.5 rounded-full bg-white text-black font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all pill-glow font-body">View My Files</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const RESTRICTED = ['.exe', '.bat', '.cmd', '.msi', '.ps1', '.sh'];
+const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+
+// Drag and drop
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.style.borderColor = '#00E5FF';
+  dropzone.style.background = 'rgba(0,229,255,0.03)';
+});
+dropzone.addEventListener('dragleave', () => {
+  dropzone.style.borderColor = '';
+  dropzone.style.background = '';
+});
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.style.borderColor = '';
+  dropzone.style.background = '';
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file) {
+  const errEl = document.getElementById('file-error');
+  const errText = document.getElementById('error-text');
+  errEl.classList.add('hidden');
+
+  // Validate size
+  if (file.size > MAX_SIZE) {
+    errText.textContent = 'File exceeds 100MB limit (' + formatSize(file.size) + ')';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // Validate type
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (RESTRICTED.includes(ext)) {
+    errText.textContent = 'Restricted file type: ' + ext;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  startPipeline(file);
+}
+
+function startPipeline(file) {
+  document.getElementById('dropzone-area').classList.add('hidden');
+  document.getElementById('pipeline-panel').classList.remove('hidden');
+  document.getElementById('pipeline-filename').textContent = file.name;
+
+  const stages = ['hash', 'chunk', 'encrypt', 'store'];
+  const delays = [800, 600, 1200, 900]; // Realistic delays
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  let stageStart = Date.now();
+
+  function activateStage(idx) {
+    if (idx >= stages.length) {
+      // All done — upload
+      doUpload(file);
+      return;
+    }
+
+    const stageEl = document.getElementById('stage-' + stages[idx]);
+    const dot = stageEl.querySelector('.stage-dot');
+    const tag = stageEl.querySelector('.stage-tag');
+    const time = stageEl.querySelector('.stage-time');
+
+    // Mark active
+    dot.className = 'w-4 h-4 rounded-full bg-state-cyan animate-pulse stage-dot';
+    tag.className = 'stage-tag badge badge-cyan text-[9px]';
+    tag.textContent = 'ACTIVE';
+    stageStart = Date.now();
+
+    // Progress
+    const pct = ((idx + 0.5) / stages.length * 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = Math.round(pct) + '%';
+
+    setTimeout(() => {
+      // Mark done
+      const elapsed = ((Date.now() - stageStart) / 1000).toFixed(1);
+      dot.className = 'w-4 h-4 rounded-full bg-state-green stage-dot';
+      tag.className = 'stage-tag badge badge-green text-[9px]';
+      tag.textContent = 'DONE';
+      time.textContent = elapsed + 's';
+
+      const donePct = ((idx + 1) / stages.length * 100);
+      progressBar.style.width = donePct + '%';
+      progressText.textContent = Math.round(donePct) + '%';
+
+      activateStage(idx + 1);
+    }, delays[idx]);
+  }
+
+  activateStage(0);
+}
+
+function doUpload(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  fetch('/user/upload', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('pipeline-panel').classList.add('hidden');
+        document.getElementById('success-panel').classList.remove('hidden');
+        document.getElementById('success-hash').textContent = data.fingerprint || 'N/A';
+        document.getElementById('success-key').textContent = 'K-' + String(data.file_id).padStart(4, '0');
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(e => alert('Upload error: ' + e.message));
+}
+
+function resetUpload() {
+  document.getElementById('success-panel').classList.add('hidden');
+  document.getElementById('pipeline-panel').classList.add('hidden');
+  document.getElementById('dropzone-area').classList.remove('hidden');
+  document.getElementById('file-input').value = '';
+
+  // Reset stages
+  ['hash', 'chunk', 'encrypt', 'store'].forEach(s => {
+    const el = document.getElementById('stage-' + s);
+    el.querySelector('.stage-dot').className = 'w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot';
+    el.querySelector('.stage-tag').className = 'stage-tag badge text-[9px]';
+    el.querySelector('.stage-tag').textContent = 'WAITING';
+    el.querySelector('.stage-time').textContent = '';
+  });
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-text').textContent = '0%';
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
+  return bytes.toFixed(1) + ' ' + units[i];
+}
+</script>
+{% endblock %}

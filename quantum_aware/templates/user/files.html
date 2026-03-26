@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}My Files — Quantum-Aware Enterprise{% endblock %}
+
+{% block content %}
+<!-- Top navbar -->
+<nav class="fixed top-0 w-full z-50 bg-black/40 backdrop-blur-xl border-b border-white/[0.07]" style="box-shadow: inset 0px 1px 0px rgba(255,255,255,0.05);">
+  <div class="flex justify-between items-center px-6 md:px-12 py-4 max-w-[1440px] mx-auto w-full">
+    <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+    <div class="flex items-center gap-6 text-sm font-body">
+      <a href="{{ url_for('user.files') }}" class="text-white font-semibold">My Files</a>
+      <a href="{{ url_for('user.upload_page') }}" class="text-white/50 hover:text-white transition-colors">Upload</a>
+      <!-- Account dropdown -->
+      <div class="relative" id="account-dropdown">
+        <button onclick="document.getElementById('dropdown-menu').classList.toggle('hidden')" class="flex items-center gap-2 text-white/60 hover:text-white transition">
+          <div class="w-7 h-7 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-[10px] font-bold font-mono">U</div>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="dropdown-menu" class="hidden absolute right-0 top-12 w-44 glass-card rounded-xl py-2 border border-white/[0.07]">
+          <a href="#" class="block px-4 py-2 text-xs text-white/50 hover:bg-white/[0.03] transition font-body">Settings</a>
+          <div class="border-t border-white/[0.07] my-1"></div>
+          <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-xs text-state-red/70 hover:bg-state-red/5 transition font-body">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 md:px-12 max-w-6xl mx-auto">
+  <!-- Page header -->
+  <div class="mb-8">
+    <h1 class="font-heading text-3xl md:text-4xl font-extrabold tracking-tight"><span class="text-gradient">My Encrypted Files</span></h1>
+    <p class="text-white/40 text-sm font-body mt-2">Manage your encrypted files in the Quantum Vault</p>
+  </div>
+
+  <!-- Stats pills -->
+  <div class="flex flex-wrap gap-3 mb-8">
+    <div class="glass-card rounded-full px-5 py-2 flex items-center gap-2">
+      <span class="text-[10px] text-white/30 uppercase tracking-wider font-mono">Files:</span>
+      <span id="stat-count" class="text-sm font-mono text-state-cyan font-bold">0</span>
+    </div>
+    <div class="glass-card rounded-full px-5 py-2 flex items-center gap-2">
+      <span class="text-[10px] text-white/30 uppercase tracking-wider font-mono">Storage:</span>
+      <span id="stat-storage" class="text-sm font-mono text-state-amber font-bold">0 B</span>
+    </div>
+    <div class="glass-card rounded-full px-5 py-2 flex items-center gap-2">
+      <span class="text-[10px] text-white/30 uppercase tracking-wider font-mono">Protection:</span>
+      <span id="stat-protection" class="text-sm font-mono text-state-green font-bold">AES-128</span>
+    </div>
+  </div>
+
+  <!-- File table -->
+  <div class="glass-card rounded-2xl overflow-hidden" id="file-table-container">
+    <table class="w-full text-xs font-mono">
+      <thead>
+        <tr class="border-b border-white/[0.07] text-white/30 uppercase tracking-wider">
+          <th class="text-left px-5 py-3">Name</th>
+          <th class="text-left px-5 py-3">Size</th>
+          <th class="text-left px-5 py-3">Uploaded</th>
+          <th class="text-left px-5 py-3">Encryption</th>
+          <th class="text-left px-5 py-3">Status</th>
+          <th class="text-left px-5 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="file-tbody">
+        <tr><td colspan="6" class="text-center text-white/20 py-12 font-body">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="hidden text-center py-24">
+    <svg class="w-24 h-24 mx-auto mb-6 text-state-cyan/20" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+      <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" />
+      <polygon points="50,20 78,35 78,65 50,80 22,65 22,35" />
+    </svg>
+    <h3 class="font-heading text-xl font-bold text-white/60 mb-2">No files in your vault yet.</h3>
+    <p class="text-white/30 text-sm font-body mb-6">Upload your first file to start encrypting</p>
+    <a href="{{ url_for('user.upload_page') }}" class="inline-block px-8 py-3 rounded-full bg-white text-black font-bold text-sm hover:scale-105 active:scale-95 transition-all duration-300 pill-glow font-body">Upload File</a>
+  </div>
+
+  <!-- Confirm delete dialog -->
+  <div id="delete-dialog" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="glass-card rounded-2xl p-8 max-w-sm w-full mx-4">
+      <h3 class="font-heading text-lg font-bold mb-2">Delete File</h3>
+      <p class="text-white/50 text-sm font-body mb-6">This will permanently delete the file and destroy all encryption keys. This action cannot be undone.</p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteDialog()" class="flex-1 py-2.5 rounded-full border border-white/[0.07] text-white/60 text-sm font-body hover:bg-white/[0.03] transition">Cancel</button>
+        <button id="confirm-delete-btn" class="flex-1 py-2.5 rounded-full bg-state-red text-white text-sm font-bold hover:scale-[1.02] active:scale-95 transition-all font-body">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let userFiles = [];
+
+function loadFiles() {
+  fetch('/user/files/data').then(r => r.json()).then(files => {
+    userFiles = files;
+    renderFiles(files);
+    updateStats(files);
+  }).catch(() => {
+    document.getElementById('file-tbody').innerHTML = '<tr><td colspan="6" class="text-center text-white/20 py-12 font-body">Error loading files</td></tr>';
+  });
+}
+
+function updateStats(files) {
+  document.getElementById('stat-count').textContent = files.length;
+  const totalSize = files.reduce((s, f) => s + (f.file_size || 0), 0);
+  document.getElementById('stat-storage').textContent = formatSize(totalSize);
+  const hasContRot = files.some(f => f.encryption_state === 'CONT_ROTATION');
+  const has256 = files.some(f => f.encryption_state === 'AES-256');
+  document.getElementById('stat-protection').textContent = hasContRot ? 'MAXIMUM' : has256 ? 'AES-256' : 'AES-128';
+}
+
+function renderFiles(files) {
+  const tbody = document.getElementById('file-tbody');
+  const empty = document.getElementById('empty-state');
+  const table = document.getElementById('file-table-container');
+
+  if (files.length === 0) {
+    table.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+  table.classList.remove('hidden');
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = files.map(f => {
+    const badgeCls = f.encryption_state === 'AES-128' ? 'badge-cyan' : f.encryption_state === 'AES-256' ? 'badge-amber' : 'badge-red';
+    return `<tr class="border-b border-white/[0.04] hover:bg-white/[0.02] transition cursor-pointer" onclick="toggleExpand(${f.id})">
+      <td class="px-5 py-3 text-white/80">${f.original_name}</td>
+      <td class="px-5 py-3 text-white/50">${formatSize(f.file_size)}</td>
+      <td class="px-5 py-3 text-white/40">${f.created_at || 'N/A'}</td>
+      <td class="px-5 py-3"><span class="badge ${badgeCls}">${f.encryption_state}</span></td>
+      <td class="px-5 py-3"><span class="badge badge-green">● SECURED</span></td>
+      <td class="px-5 py-3">
+        <a href="/user/download/${f.id}" onclick="event.stopPropagation()" class="px-3 py-1 rounded-full border border-state-cyan/30 text-state-cyan text-[10px] hover:bg-state-cyan/10 transition mr-1 inline-block">↓ Download</a>
+        <button onclick="event.stopPropagation(); showDeleteDialog(${f.id})" class="px-3 py-1 rounded-full border border-state-red/30 text-state-red text-[10px] hover:bg-state-red/10 transition">✕ Delete</button>
+      </td>
+    </tr>
+    <tr id="expand-${f.id}" class="hidden"><td colspan="6" class="px-5 py-3 bg-white/[0.01]">
+      <div class="grid grid-cols-3 gap-4 text-[10px] font-mono">
+        <div><span class="text-white/30">SHA-256:</span><br><span class="text-white/50">${f.sha256_fingerprint || 'N/A'}</span></div>
+        <div><span class="text-white/30">KEY ID:</span><br><span class="text-state-cyan">K-${String(f.current_key_id || 0).padStart(4,'0')}</span></div>
+        <div><span class="text-white/30">UPLOAD TIME:</span><br><span class="text-white/50">${f.created_at || 'N/A'}</span></div>
+      </div>
+    </td></tr>`;
+  }).join('');
+}
+
+function toggleExpand(id) {
+  document.getElementById('expand-' + id)?.classList.toggle('hidden');
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
+  return bytes.toFixed(1) + ' ' + units[i];
+}
+
+let deleteFileId = null;
+function showDeleteDialog(id) {
+  deleteFileId = id;
+  document.getElementById('delete-dialog').classList.remove('hidden');
+  document.getElementById('confirm-delete-btn').onclick = () => confirmDelete();
+}
+function closeDeleteDialog() {
+  document.getElementById('delete-dialog').classList.add('hidden');
+  deleteFileId = null;
+}
+function confirmDelete() {
+  if (!deleteFileId) return;
+  fetch('/user/delete/' + deleteFileId, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => { closeDeleteDialog(); loadFiles(); })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('account-dropdown').contains(e.target)) {
+    document.getElementById('dropdown-menu').classList.add('hidden');
+  }
+});
+
+loadFiles();
+</script>
+{% endblock %}

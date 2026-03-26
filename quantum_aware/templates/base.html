@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Quantum-Aware Enterprise{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              heading: ['Syne', 'sans-serif'],
+              body: ['DM Sans', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              surface: '#0A0A14',
+              card: '#0F0F1E',
+              'state-cyan': '#00E5FF',
+              'state-purple': '#B829EA',
+              'state-red': '#FF3366',
+              'state-green': '#00FF9D',
+              'state-amber': '#FFB000',
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: #000000;
+        color: #ffffff;
+      }
+      h1, h2, h3, h4, h5, h6 { font-family: 'Syne', sans-serif; }
+      code, pre, .font-mono, [class*="mono"] { font-family: 'JetBrains Mono', monospace; }
+
+      /* Gradient text */
+      .text-gradient {
+        background: linear-gradient(144deg, #FFFFFF 40%, rgba(255,255,255,0.15) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+      }
+
+      /* Glass card */
+      .glass-card {
+        background: linear-gradient(180deg, rgba(15,15,30,0.8) 0%, rgba(10,10,20,0.6) 100%);
+        border: 1px solid rgba(255,255,255,0.07);
+        box-shadow: inset 0px 1px 0px rgba(255,255,255,0.05);
+        backdrop-filter: blur(20px);
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .glass-card:hover {
+        border-color: rgba(255,255,255,0.15);
+        box-shadow: 0 0 30px rgba(255,255,255,0.03), inset 0px 1px 0px rgba(255,255,255,0.08);
+      }
+
+      /* Pill button glow */
+      .pill-glow {
+        box-shadow: inset 0px 1px 0px rgba(255,255,255,0.4), 0px 0px 20px rgba(255,255,255,0.1);
+      }
+
+      /* State color shifts */
+      .state-normal .state-accent { color: #00E5FF; }
+      .state-normal .state-border { border-color: #00E5FF; }
+      .state-suspicious .state-accent { color: #B829EA; }
+      .state-suspicious .state-border { border-color: #B829EA; }
+      .state-attack .state-accent { color: #FF3366; }
+      .state-attack .state-border { border-color: #FF3366; }
+
+      /* Pulse animations for states */
+      @keyframes pulse-purple {
+        0%, 100% { border-color: rgba(184,41,234,0.3); }
+        50% { border-color: rgba(184,41,234,0.8); }
+      }
+      @keyframes pulse-red {
+        0%, 100% { border-color: rgba(255,51,102,0.3); }
+        50% { border-color: rgba(255,51,102,0.8); }
+      }
+      @keyframes pulse-red-fast {
+        0%, 100% { border-color: rgba(255,51,102,0.2); }
+        50% { border-color: rgba(255,51,102,1); }
+      }
+      .state-suspicious .pulse-border { animation: pulse-purple 2s ease-in-out infinite; }
+      .state-attack .pulse-border { animation: pulse-red-fast 0.8s ease-in-out infinite; }
+
+      /* Header tint */
+      .state-suspicious .header-tint { background: linear-gradient(180deg, rgba(184,41,234,0.08) 0%, transparent 100%); }
+      .state-attack .header-tint { background: linear-gradient(180deg, rgba(255,51,102,0.1) 0%, transparent 100%); }
+
+      /* Grid pattern */
+      .grid-pattern {
+        background-image:
+          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: radial-gradient(circle at center, black, transparent 80%);
+      }
+
+      /* Scroll reveal */
+      .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+      .reveal.visible { opacity: 1; transform: translateY(0); }
+
+      /* Sidebar active */
+      .sidebar-link { transition: all 0.2s; }
+      .sidebar-link:hover { background: rgba(255,255,255,0.05); }
+      .sidebar-link.active { background: rgba(0,229,255,0.08); border-right: 2px solid #00E5FF; color: #00E5FF; }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+      /* Spinning animation */
+      @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .animate-spin-slow { animation: spin-slow 2s linear infinite; }
+
+      /* Blink */
+      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+      .animate-blink { animation: blink 1s ease-in-out infinite; }
+
+      /* Dash animation for SVG */
+      @keyframes dash-flow { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
+      .animate-dash { animation: dash-flow 1s linear infinite; }
+
+      /* Concentric rings */
+      @keyframes ring-expand {
+        0% { transform: scale(1); opacity: 0.6; }
+        100% { transform: scale(2.5); opacity: 0; }
+      }
+      .animate-ring { animation: ring-expand 2s ease-out infinite; }
+      .animate-ring-delay { animation: ring-expand 2s ease-out infinite 1s; }
+
+      /* Focus glow for inputs */
+      input:focus { box-shadow: 0 0 0 2px rgba(0,229,255,0.2); }
+
+      /* Badge styles */
+      .badge { padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+      .badge-cyan { background: rgba(0,229,255,0.12); color: #00E5FF; }
+      .badge-purple { background: rgba(184,41,234,0.12); color: #B829EA; }
+      .badge-red { background: rgba(255,51,102,0.12); color: #FF3366; }
+      .badge-green { background: rgba(0,255,157,0.12); color: #00FF9D; }
+      .badge-amber { background: rgba(255,176,0,0.12); color: #FFB000; }
+
+      /* Count-up animation helper */
+      @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-black text-white antialiased min-h-screen state-normal">
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="fixed top-4 right-4 z-[100] space-y-2">
+          {% for category, message in messages %}
+            <div class="px-4 py-3 rounded-lg border text-sm font-body backdrop-blur-xl
+              {% if category == 'error' %}bg-red-900/50 border-red-500/40 text-red-300
+              {% elif category == 'success' %}bg-emerald-900/50 border-emerald-500/40 text-emerald-300
+              {% else %}bg-white/10 border-white/20 text-white/90{% endif %}"
+              onclick="this.remove()" style="cursor:pointer">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <!-- Scroll Reveal Observer -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

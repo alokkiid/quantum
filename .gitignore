@@ -1,0 +1,47 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+*.out.log
+*.err.log
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Sensitive/encrypted data
+vault/
+*.enc
+
+# Testing and verification scripts (optional - remove if needed)
+verify_*.py
+check_tables.py
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
