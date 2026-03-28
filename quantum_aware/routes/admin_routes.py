@@ -237,7 +237,7 @@ def simulate_attack():
     # For high intensity, force-escalate to CONT_ROTATION if not there yet
     # (200 events / 60s = 3.3 rps, below the 100 rps threshold, but
     #  the user spec says high = active attack simulation)
-    if intensity == 'high':
+    if intensity in ('high', 'medium'):
         current_state = state_engine.get_file_state(file_id)
         if current_state == 'AES-256':
             state_engine.transition_suspicious_to_attack(file_id)
