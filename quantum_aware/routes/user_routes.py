@@ -217,6 +217,10 @@ def download(file_id: int):
     finally:
         conn.close()
 
+    # Evaluate with real caller IP for per-IP metrics 
+    import state_engine
+    state_engine.evaluate_and_transition(file_id, ip=request.remote_addr)
+
     return send_file(
         io.BytesIO(plaintext),
         as_attachment=True,

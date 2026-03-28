@@ -1,20 +1,13 @@
 """
 app.py — Flask application entry point for Quantum-Aware Enterprise.
-
-Responsibilities:
-  - Create and configure the Flask app
-  - Initialise the database (creates tables on first run)
-  - Seed two default accounts if users table is empty
-  - Register admin_routes and user_routes blueprints
-  - Define core routes: /, /login (GET+POST), /logout
 """
 
 import sys
 import os
 import threading
 import time
+from collections import defaultdict, deque
 
-# Make project root importable regardless of working directory
 sys.path.insert(0, os.path.dirname(__file__))
 
 from flask import Flask, redirect, url_for, render_template, request, flash
@@ -35,25 +28,82 @@ app.secret_key = config.SECRET_KEY
 
 
 # ---------------------------------------------------------------------------
+# Real-time traffic tracking (Fix 2 + Fix 3)
+# ---------------------------------------------------------------------------
+
+_req_lock = threading.Lock()
+_global_timestamps: deque = deque()
+_ip_timestamps: dict = defaultdict(deque)
+_ip_auth_failures: dict = defaultdict(deque)
+
+
+def _purge_window(q: deque, now: float, window: int = 60) -> None:
+    while q and now - q[0] > window:
+        q.popleft()
+
+
+@app.before_request
+def track_all_requests():
+    now = time.time()
+    ip = request.remote_addr or '0.0.0.0'
+    with _req_lock:
+        _global_timestamps.append(now)
+        _purge_window(_global_timestamps, now)
+        q = _ip_timestamps[ip]
+        q.append(now)
+        _purge_window(q, now)
+
+
+def record_auth_failure(ip: str) -> None:
+    now = time.time()
+    with _req_lock:
+        q = _ip_auth_failures[ip]
+        q.append(now)
+        _purge_window(q, now)
+
+
+def get_request_metrics(ip: str = None) -> dict:
+    now = time.time()
+    with _req_lock:
+        _purge_window(_global_timestamps, now)
+        global_rps = len(_global_timestamps) / 60.0
+        ip_rps = 0.0
+        ip_fails = 0
+        if ip:
+            q = _ip_timestamps.get(ip)
+            if q:
+                _purge_window(q, now)
+                ip_rps = len(q) / 60.0
+            fq = _ip_auth_failures.get(ip)
+            if fq:
+                _purge_window(fq, now)
+                ip_fails = len(fq)
+    return {
+        'global_rps': global_rps,
+        'ip_rps': ip_rps,
+        'ip_auth_failures': ip_fails,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Initialise database & seed accounts
 # ---------------------------------------------------------------------------
 
 def seed_accounts() -> None:
-    """Insert default admin and user accounts if the users table is empty."""
+    """Insert only admin account on first run. Users register themselves."""
     conn = database.get_db()
     try:
         count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if count == 0:
             seeds = [
                 ('admin@qaware.com', auth.hash_password('admin123'), 'admin'),
-                ('user@qaware.com',  auth.hash_password('user123'),  'user'),
             ]
             conn.executemany(
                 "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
                 seeds
             )
             conn.commit()
-            print("[app] Seeded 2 default accounts (admin + user).")
+            print("[app] Seeded admin account.")
     finally:
         conn.close()
 
@@ -62,7 +112,6 @@ with app.app_context():
     database.init_db()
     seed_accounts()
 
-    # Edge case: resume rotation loops for files stuck in CONT_ROTATION
     import rotation_loop
     conn = database.get_db()
     try:
@@ -90,16 +139,53 @@ app.register_blueprint(user_bp,  url_prefix='/user')
 
 @app.route('/')
 def index():
-    """Landing page."""
     return render_template('landing.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm  = request.form.get('confirm_password', '')
+
+        if not email or not password:
+            flash('Email and password are required.', 'error')
+            return render_template('register.html'), 400
+
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return render_template('register.html'), 400
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'error')
+            return render_template('register.html'), 400
+
+        conn = database.get_db()
+        try:
+            existing = conn.execute(
+                "SELECT id FROM users WHERE email = ?", (email,)
+            ).fetchone()
+            if existing:
+                flash('An account with this email already exists.', 'error')
+                return render_template('register.html'), 400
+
+            conn.execute(
+                "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'user')",
+                (email, auth.hash_password(password))
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        flash('Account created successfully. Please log in.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    GET  → render login form
-    POST → validate credentials, redirect by role
-    """
     if request.method == 'POST':
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '')
@@ -113,6 +199,7 @@ def login():
             else:
                 return redirect(url_for('user.files'))
         else:
+            record_auth_failure(request.remote_addr or '0.0.0.0')
             flash('Invalid email or password.', 'error')
             return render_template('login.html'), 401
 
@@ -121,7 +208,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    """Clear session and redirect to login."""
     auth.logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
@@ -137,12 +223,11 @@ def forbidden(e):
 
 
 # ---------------------------------------------------------------------------
-# Background monitor (evaluates all files every 10 seconds)
+# Background monitor
 # ---------------------------------------------------------------------------
 
 def _background_monitor():
-    """Daemon thread: evaluate state transitions for every file, every 10s."""
-    time.sleep(5)  # initial delay to let app fully start
+    time.sleep(5)
     print("[monitor] Background threat monitor started (10s interval)")
     while True:
         try:
@@ -165,7 +250,6 @@ def _background_monitor():
         time.sleep(10)
 
 
-# Start monitor only once (avoid double-start from Flask reloader)
 _monitor_started = False
 
 def _start_monitor_once():
