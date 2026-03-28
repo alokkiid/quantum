@@ -181,8 +181,8 @@ def download(file_id: int):
         if file_row is None:
             return jsonify({'success': False, 'error': 'File not found'}), 404
 
-        # Allow if user owns file or is admin
-        if file_row['user_id'] != user_id and session.get('role') != 'admin':
+        # Allow if user owns file 
+        if file_row['user_id'] != user_id :
             abort(403)
 
         # Get ACTIVE key
