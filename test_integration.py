@@ -41,10 +41,19 @@ print("\n" + "=" * 60)
 print("  Quantum-Aware Enterprise -- Integration Test")
 print("=" * 60 + "\n")
 
+# Replace the entire "with app.test_client() as c:" opening block
+
 with app.test_client() as c:
 
+    # -- Pre-step: Register test user --
+    c.post('/register', data={
+        'email': 'user@test.com',
+        'password': 'testpass123',
+        'confirm_password': 'testpass123'
+    })
+
     # -- Step 1: Login as user --
-    r = c.post('/login', data={'email': 'user@qaware.com', 'password': 'user123'})
+    r = c.post('/login', data={'email': 'user@test.com', 'password': 'testpass123'})
     check(1, "Login as user -> redirect to /user/files",
           r.status_code == 302 and '/user/files' in r.headers.get('Location', ''),
           f"status={r.status_code}, location={r.headers.get('Location')}")
@@ -132,7 +141,7 @@ with app.test_client() as c:
 
     # -- Step 10: Download file -> content still matches --
     c.get('/logout')
-    c.post('/login', data={'email': 'user@qaware.com', 'password': 'user123'})
+    c.post('/login', data={'email': 'user@test.com', 'password': 'testpass123'})
     r = c.get(f'/user/download/{file_id}')
     check(10, "Download after rotation -> content intact",
           r.status_code == 200 and r.data == test_content,
