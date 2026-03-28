@@ -128,7 +128,7 @@ def transition_suspicious_to_normal(file_id: int) -> None:
 
     # Check ML one more time before reverting
     import ml_engine
-    threat = ml_engine.get_current_threat_state(file_id)
+    threat = ml_engine.get_current_threat_state(file_id, ip=None)
     if threat['state'] != 'Normal':
         print(f"[state_engine] Hysteresis abort for file={file_id}: "
               f"ML still says {threat['state']}")
@@ -174,7 +174,7 @@ def _cancel_hysteresis(file_id: int) -> None:
 # Main evaluation entry point
 # ---------------------------------------------------------------------------
 
-def evaluate_and_transition(file_id: int) -> None:
+def evaluate_and_transition(file_id: int, ip: str = None) -> None:
     """
     Called by the background monitor every 10 seconds.
     Evaluates ML classification and triggers transitions if needed.
@@ -187,7 +187,7 @@ def evaluate_and_transition(file_id: int) -> None:
     import ml_engine
 
     current_state = get_file_state(file_id)
-    threat = ml_engine.get_current_threat_state(file_id)
+    threat = ml_engine.get_current_threat_state(file_id, ip=ip)
     ml_state = threat['state']
 
     if current_state == 'AES-128' and ml_state == 'Suspicious':
