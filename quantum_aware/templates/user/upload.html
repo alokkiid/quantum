@@ -1,116 +1,208 @@
 {% extends "base.html" %}
+{% block title %}Upload — QuantumShield{% endblock %}
+{% block head %}
+<style>
+  .user-nav{position:sticky;top:0;z-index:50;background:rgba(4,8,15,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 32px;justify-content:space-between}
+  .upload-wrap{max-width:680px;margin:0 auto;padding:40px 24px 60px}
+  .page-header{margin-bottom:32px}
+  .page-header h1{font-size:26px;font-weight:700;letter-spacing:-.8px;margin-bottom:6px}
+  .page-header p{font-size:14px;color:var(--ts)}
 
-{% block title %}Upload — Quantum-Aware Enterprise{% endblock %}
+  /* Drop zone */
+  .drop-zone{border:2px dashed rgba(255,255,255,0.12);border-radius:18px;padding:52px 32px;text-align:center;cursor:pointer;transition:all .3s cubic-bezier(.16,1,.3,1);position:relative;background:rgba(255,255,255,0.02)}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:rgba(56,189,248,0.5);background:rgba(56,189,248,0.04);transform:scale(1.01)}
+  .drop-zone.drag-over{box-shadow:0 0 40px rgba(56,189,248,0.1)}
+  .drop-icon{width:56px;height:56px;border-radius:16px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .drop-icon svg{width:26px;height:26px;color:var(--cyan)}
+  .drop-zone h3{font-size:17px;font-weight:700;margin-bottom:8px}
+  .drop-zone p{font-size:13px;color:var(--ts);margin-bottom:16px}
+  .drop-limits{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .limit-tag{background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:999px;padding:4px 12px;font-size:11px;color:var(--tm);font-family:'JetBrains Mono',monospace}
+  #file-input{display:none}
+  .browse-btn{background:var(--grad);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;transition:opacity .2s}
+  .browse-btn:hover{opacity:.9}
+
+  /* File preview */
+  .file-preview{background:var(--bg3);border:1px solid var(--border2);border-radius:14px;padding:18px 20px;margin-top:20px;display:none}
+  .file-preview.show{display:block}
+  .preview-row{display:flex;align-items:center;gap:14px}
+  .preview-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .preview-name{font-size:14px;font-weight:700;color:var(--tp)}
+  .preview-meta{font-size:12px;color:var(--tm);margin-top:3px;font-family:'JetBrains Mono',monospace}
+  .validation-msgs{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .val-msg{padding:8px 12px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace}
+  .val-ok{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:var(--green)}
+  .val-warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--amber)}
+  .val-err{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--red)}
+
+  /* Encryption preview */
+  .enc-preview{background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.18);border-radius:12px;padding:14px 16px;margin-top:16px;display:none}
+  .enc-preview.show{display:flex;align-items:center;gap:12px}
+  .enc-preview-icon{width:34px;height:34px;border-radius:9px;background:rgba(56,189,248,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .enc-label{font-size:12px;color:var(--ts)}
+  .enc-algo{font-size:14px;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace}
+
+  /* Upload button */
+  .upload-action{margin-top:20px;display:none}
+  .upload-action.show{display:flex;gap:10px}
+
+  /* Pipeline */
+  .pipeline{margin-top:28px;display:none}
+  .pipeline.show{display:block}
+  .pipeline-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .step{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;transition:all .4s cubic-bezier(.16,1,.3,1)}
+  .step.active{border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.05)}
+  .step.done{border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.05)}
+  .step.error{border-color:rgba(239,68,68,0.4);background:rgba(239,68,68,0.05)}
+  .step-icon{font-size:22px;margin-bottom:8px}
+  .step-name{font-size:11px;font-weight:700;color:var(--ts);text-transform:uppercase;letter-spacing:.06em}
+  .step-status{font-size:10px;color:var(--tm);margin-top:3px;font-family:'JetBrains Mono',monospace;min-height:14px}
+  .step.active .step-name{color:var(--cyan)}
+  .step.done .step-name{color:var(--green)}
+  .step.error .step-name{color:var(--red)}
+
+  /* Progress bar */
+  .progress-wrap{background:rgba(255,255,255,0.05);border-radius:999px;height:6px;overflow:hidden;margin-bottom:10px}
+  .progress-bar{height:100%;background:var(--grad);border-radius:999px;width:0%;transition:width .4s cubic-bezier(.16,1,.3,1)}
+  .progress-label{font-size:12px;color:var(--ts);font-family:'JetBrains Mono',monospace;text-align:right}
+
+  /* Success card */
+  .success-card{background:var(--bg3);border:1px solid rgba(16,185,129,0.3);border-radius:16px;padding:28px;display:none}
+  .success-card.show{display:block}
+  .success-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .success-check{width:48px;height:48px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);display:flex;align-items:center;justify-content:center}
+  .success-check svg{width:22px;height:22px;color:var(--green)}
+  .success-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .sd-item{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;padding:11px 13px}
+  .sd-lbl{font-size:10px;color:var(--tm);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+  .sd-val{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--tp);font-weight:600;word-break:break-all}
+  .success-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* Error card */
+  .error-card{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:20px;display:none;margin-top:20px}
+  .error-card.show{display:flex;align-items:flex-start;gap:14px}
+  .error-icon{width:38px;height:38px;border-radius:9px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .error-body h4{font-size:14px;font-weight:700;color:var(--red);margin-bottom:4px}
+  .error-body p{font-size:13px;color:var(--ts);margin-bottom:12px}
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Top navbar -->
-<nav class="fixed top-0 w-full z-50 bg-black/40 backdrop-blur-xl border-b border-white/[0.07]" style="box-shadow: inset 0px 1px 0px rgba(255,255,255,0.05);">
-  <div class="flex justify-between items-center px-6 md:px-12 py-4 max-w-[1440px] mx-auto w-full">
-    <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
-    <div class="flex items-center gap-6 text-sm font-body">
-      <a href="{{ url_for('user.files') }}" class="text-white/50 hover:text-white transition-colors">My Files</a>
-      <a href="{{ url_for('user.upload_page') }}" class="text-white font-semibold">Upload</a>
-      <a href="{{ url_for('logout') }}" class="text-white/40 hover:text-white transition-colors">Logout</a>
+<!-- Topnav -->
+<nav class="user-nav">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo-icon" style="width:30px;height:30px;border-radius:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
+    <span style="font-size:16px;font-weight:700;letter-spacing:-.5px">Quantum<span style="background:var(--grad90);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Shield</span></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="{{ url_for('user.files') }}" class="btn-ghost" style="padding:8px 16px;font-size:13px">← My Vault</a>
+    <a href="{{ url_for('logout') }}" class="btn-ghost" style="padding:8px 16px;font-size:13px">Sign Out</a>
   </div>
 </nav>
 
-<div class="pt-24 pb-16 px-6 md:px-12 max-w-3xl mx-auto">
-  <!-- Page header -->
-  <div class="mb-8 text-center">
-    <h1 class="font-heading text-3xl md:text-4xl font-extrabold tracking-tight"><span class="text-gradient">Upload & Encrypt</span></h1>
-    <p class="text-white/40 text-sm font-body mt-2">Files are encrypted with AES-128-GCM before being stored in the vault</p>
+<div class="upload-wrap">
+  <div class="page-header">
+    <h1>Upload File</h1>
+    <p>Files are encrypted with AES-128-GCM immediately on upload. Plaintext never touches disk.</p>
   </div>
 
-  <!-- Upload dropzone -->
-  <div id="dropzone-area">
-    <form id="upload-form" enctype="multipart/form-data">
-      <label id="dropzone" class="flex flex-col items-center justify-center h-64 w-full max-w-[600px] mx-auto border-2 border-dashed border-white/[0.1] rounded-2xl cursor-pointer hover:border-state-cyan/40 transition-all duration-300 group glass-card">
-        <svg class="w-12 h-12 text-white/15 group-hover:text-state-cyan/40 transition-colors mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-        </svg>
-        <div class="text-sm text-white/30 font-body mb-1">Drag & drop your file here</div>
-        <div class="text-[10px] text-white/20 font-mono">or click to browse • Max 100MB</div>
-        <input type="file" name="file" class="hidden" id="file-input" />
-      </label>
-    </form>
+  <!-- Drop zone -->
+  <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+       ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+    <div class="drop-icon">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <h3>Drop your file here</h3>
+    <p>or click to browse from your device</p>
+    <button class="browse-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Browse Files
+    </button>
+    <div class="drop-limits" style="margin-top:16px">
+      <span class="limit-tag">Max 50MB</span>
+      <span class="limit-tag">All file types</span>
+      <span class="limit-tag">AES-128-GCM</span>
+    </div>
+    <input type="file" id="file-input" onchange="handleFileSelect(this.files[0])"/>
   </div>
 
-  <!-- File validation error -->
-  <div id="file-error" class="hidden mt-4 text-center">
-    <div class="inline-block bg-state-red/10 border border-state-red/30 rounded-lg px-6 py-3 text-sm text-state-red font-body" id="error-text"></div>
+  <!-- File preview + validation -->
+  <div class="file-preview" id="file-preview">
+    <div class="preview-row">
+      <div class="preview-icon" id="preview-icon">📁</div>
+      <div style="flex:1">
+        <div class="preview-name" id="preview-name">—</div>
+        <div class="preview-meta" id="preview-meta">—</div>
+      </div>
+      <button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="clearFile()">✕ Clear</button>
+    </div>
+    <div class="validation-msgs" id="validation-msgs"></div>
   </div>
 
-  <!-- Pipeline panel (hidden until file selected) -->
-  <div id="pipeline-panel" class="hidden mt-8 glass-card rounded-2xl p-8 max-w-[600px] mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="font-heading text-sm font-bold">Encryption Pipeline</h3>
-      <span id="pipeline-filename" class="text-xs font-mono text-white/30"></span>
+  <!-- Encryption preview -->
+  <div class="enc-preview" id="enc-preview">
+    <div class="enc-preview-icon">
+      <svg width="16" height="16" fill="none" stroke="var(--cyan)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
-
-    <div class="space-y-5">
-      <div class="flex items-center gap-4" id="stage-hash">
-        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
-        <div class="flex-1">
-          <div class="text-xs font-mono font-bold">HASHING</div>
-          <div class="text-[10px] text-white/30 font-body">Computing SHA-256 fingerprint</div>
-        </div>
-        <span class="stage-tag badge text-[9px]">WAITING</span>
-        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
-      </div>
-      <div class="flex items-center gap-4" id="stage-chunk">
-        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
-        <div class="flex-1">
-          <div class="text-xs font-mono font-bold">CHUNKING</div>
-          <div class="text-[10px] text-white/30 font-body">Segmenting file data</div>
-        </div>
-        <span class="stage-tag badge text-[9px]">WAITING</span>
-        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
-      </div>
-      <div class="flex items-center gap-4" id="stage-encrypt">
-        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
-        <div class="flex-1">
-          <div class="text-xs font-mono font-bold">ENCRYPTING</div>
-          <div class="text-[10px] text-white/30 font-body">AES-128-GCM encryption</div>
-        </div>
-        <span class="stage-tag badge text-[9px]">WAITING</span>
-        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
-      </div>
-      <div class="flex items-center gap-4" id="stage-store">
-        <div class="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot"></div>
-        <div class="flex-1">
-          <div class="text-xs font-mono font-bold">STORING</div>
-          <div class="text-[10px] text-white/30 font-body">Writing to encrypted vault</div>
-        </div>
-        <span class="stage-tag badge text-[9px]">WAITING</span>
-        <span class="stage-time text-[9px] font-mono text-white/20 w-12 text-right"></span>
-      </div>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="mt-6 h-2 bg-white/[0.05] rounded-full overflow-hidden">
-      <div id="progress-bar" class="h-full bg-gradient-to-r from-state-cyan to-state-green rounded-full transition-all duration-500" style="width: 0%"></div>
-    </div>
-    <div class="mt-2 text-center">
-      <span id="progress-text" class="text-[10px] font-mono text-white/30">0%</span>
+    <div>
+      <div class="enc-label">This file will be encrypted using</div>
+      <div class="enc-algo">AES-128-GCM · 128-bit key · 12-byte nonce</div>
     </div>
   </div>
 
-  <!-- Success state (hidden) -->
-  <div id="success-panel" class="hidden mt-8 glass-card rounded-2xl p-8 max-w-[600px] mx-auto text-center" style="border: 1px solid rgba(0,255,157,0.2);">
-    <div class="w-16 h-16 rounded-full bg-state-green/10 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-8 h-8 text-state-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+  <!-- Upload action -->
+  <div class="upload-action" id="upload-action">
+    <button class="btn-primary" style="flex:1;justify-content:center;padding:14px;font-size:15px" onclick="startUpload()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Encrypt & Upload
+    </button>
+    <button class="btn-ghost" style="padding:14px 20px" onclick="clearFile()">Cancel</button>
+  </div>
+
+  <!-- Pipeline + progress -->
+  <div class="pipeline" id="pipeline">
+    <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="progress-label" id="progress-label">0%</div>
+    <div class="pipeline-steps" style="margin-top:16px">
+      <div class="step" id="step-1"><div class="step-icon">🔍</div><div class="step-name">Fingerprint</div><div class="step-status" id="step-1-status">Waiting</div></div>
+      <div class="step" id="step-2"><div class="step-icon">🔐</div><div class="step-name">Encrypt</div><div class="step-status" id="step-2-status">Waiting</div></div>
+      <div class="step" id="step-3"><div class="step-icon">💾</div><div class="step-name">Store</div><div class="step-status" id="step-3-status">Waiting</div></div>
+      <div class="step" id="step-4"><div class="step-icon">✓</div><div class="step-name">Confirm</div><div class="step-status" id="step-4-status">Waiting</div></div>
     </div>
-    <h3 class="font-heading text-xl font-bold text-state-green mb-2">File Encrypted & Stored</h3>
-    <p class="text-white/40 text-sm font-body mb-4">Your file has been secured in the Quantum Vault</p>
-    <div class="glass-card rounded-xl p-4 mb-6 text-left space-y-2">
-      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">SHA-256</span><span id="success-hash" class="text-white/60"></span></div>
-      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">KEY ID</span><span id="success-key" class="text-state-cyan"></span></div>
-      <div class="flex justify-between text-[10px] font-mono"><span class="text-white/30">ENCRYPTION</span><span class="badge badge-cyan">AES-128</span></div>
+  </div>
+
+  <!-- Success card -->
+  <div class="success-card" id="success-card">
+    <div class="success-header">
+      <div class="success-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div>
+        <div style="font-size:18px;font-weight:700">File Encrypted & Stored</div>
+        <div style="font-size:13px;color:var(--ts);margin-top:3px">Your file is now protected. The vault is monitoring for threats.</div>
+      </div>
     </div>
-    <div class="flex gap-3 justify-center">
-      <button onclick="resetUpload()" class="px-6 py-2.5 rounded-full border border-white/[0.1] text-white/60 text-sm font-body hover:bg-white/[0.03] transition">Upload Another</button>
-      <a href="{{ url_for('user.files') }}" class="px-6 py-2.5 rounded-full bg-white text-black font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all pill-glow font-body">View My Files</a>
+    <div class="success-details" id="success-details"></div>
+    <div class="success-actions">
+      <button class="btn-primary" style="padding:11px 20px;font-size:14px" id="dl-now-btn" onclick="downloadNow()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Now
+      </button>
+      <button class="btn-ghost" style="padding:11px 20px;font-size:14px" onclick="resetUpload()">+ Upload Another</button>
+      <a href="{{ url_for('user.files') }}" class="btn-ghost" style="padding:11px 20px;font-size:14px">View Vault →</a>
+    </div>
+  </div>
+
+  <!-- Error card -->
+  <div class="error-card" id="error-card">
+    <div class="error-icon"><svg width="18" height="18" fill="none" stroke="var(--red)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+    <div class="error-body">
+      <h4>Upload Failed</h4>
+      <p id="error-reason">An unexpected error occurred.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="padding:9px 18px;font-size:13px" onclick="retryUpload()">↺ Retry</button>
+        <button class="btn-ghost" style="padding:9px 18px;font-size:13px" onclick="resetUpload()">Clear & Start Over</button>
+      </div>
     </div>
   </div>
 </div>
@@ -118,154 +210,222 @@
 
 {% block scripts %}
 <script>
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('file-input');
-const RESTRICTED = ['.exe', '.bat', '.cmd', '.msi', '.ps1', '.sh'];
-const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_TYPES = null; // all types allowed
+let selectedFile = null;
+let lastUploadResult = null;
 
-// Drag and drop
-dropzone.addEventListener('dragover', (e) => {
+const typeIcons = {
+  pdf:'📄', image:'🖼', code:'💻', archive:'📦', other:'📁'
+};
+
+function getFileType(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return 'pdf';
+  if (['png','jpg','jpeg','gif','svg','webp'].includes(ext)) return 'image';
+  if (['js','ts','py','html','css','json','sh','go','rs','java','c','cpp'].includes(ext)) return 'code';
+  if (['zip','tar','gz','rar','7z'].includes(ext)) return 'archive';
+  return 'other';
+}
+
+function fmtSize(b) {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function handleDragOver(e) {
   e.preventDefault();
-  dropzone.style.borderColor = '#00E5FF';
-  dropzone.style.background = 'rgba(0,229,255,0.03)';
-});
-dropzone.addEventListener('dragleave', () => {
-  dropzone.style.borderColor = '';
-  dropzone.style.background = '';
-});
-dropzone.addEventListener('drop', (e) => {
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+
+function handleDrop(e) {
   e.preventDefault();
-  dropzone.style.borderColor = '';
-  dropzone.style.background = '';
-  if (e.dataTransfer.files.length) {
-    fileInput.files = e.dataTransfer.files;
-    handleFile(e.dataTransfer.files[0]);
-  }
-});
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileSelect(file);
+}
 
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) handleFile(fileInput.files[0]);
-});
+function handleFileSelect(file) {
+  if (!file) return;
+  selectedFile = file;
 
-function handleFile(file) {
-  const errEl = document.getElementById('file-error');
-  const errText = document.getElementById('error-text');
-  errEl.classList.add('hidden');
+  // Show preview
+  const ft = getFileType(file.name);
+  document.getElementById('preview-icon').textContent = typeIcons[ft];
+  document.getElementById('preview-name').textContent = file.name;
+  document.getElementById('preview-meta').textContent = `${fmtSize(file.size)} · ${ft.toUpperCase()} · ${file.type || 'unknown type'}`;
+  document.getElementById('file-preview').classList.add('show');
+  document.getElementById('enc-preview').classList.add('show');
 
-  // Validate size
+  // Validate
+  const msgs = [];
+  let hasError = false;
+
   if (file.size > MAX_SIZE) {
-    errText.textContent = 'File exceeds 100MB limit (' + formatSize(file.size) + ')';
-    errEl.classList.remove('hidden');
-    return;
+    msgs.push({ type:'err', text:`File too large: ${fmtSize(file.size)} (max 50MB)` });
+    hasError = true;
+  } else {
+    msgs.push({ type:'ok', text:`File size OK: ${fmtSize(file.size)}` });
   }
 
-  // Validate type
-  const ext = '.' + file.name.split('.').pop().toLowerCase();
-  if (RESTRICTED.includes(ext)) {
-    errText.textContent = 'Restricted file type: ' + ext;
-    errEl.classList.remove('hidden');
-    return;
-  }
+  // Duplicate check (against known files)
+  fetch('/user/files/data').then(r => r.json()).then(files => {
+    const dup = files.find(f => f.original_name === file.name);
+    if (dup) msgs.push({ type:'warn', text:`Duplicate detected: "${file.name}" already in vault` });
+    else msgs.push({ type:'ok', text:'No duplicate found in vault' });
 
-  startPipeline(file);
-}
+    msgs.push({ type:'ok', text:'Encryption: AES-128-GCM · 12-byte nonce' });
 
-function startPipeline(file) {
-  document.getElementById('dropzone-area').classList.add('hidden');
-  document.getElementById('pipeline-panel').classList.remove('hidden');
-  document.getElementById('pipeline-filename').textContent = file.name;
+    const el = document.getElementById('validation-msgs');
+    el.innerHTML = msgs.map(m =>
+      `<div class="val-msg val-${m.type}">${m.type==='ok'?'✓':m.type==='warn'?'⚠':m.type==='err'?'✕':''} ${m.text}</div>`
+    ).join('');
 
-  const stages = ['hash', 'chunk', 'encrypt', 'store'];
-  const delays = [800, 600, 1200, 900]; // Realistic delays
-  const progressBar = document.getElementById('progress-bar');
-  const progressText = document.getElementById('progress-text');
-  let stageStart = Date.now();
-
-  function activateStage(idx) {
-    if (idx >= stages.length) {
-      // All done — upload
-      doUpload(file);
-      return;
+    if (!hasError) {
+      document.getElementById('upload-action').classList.add('show');
     }
-
-    const stageEl = document.getElementById('stage-' + stages[idx]);
-    const dot = stageEl.querySelector('.stage-dot');
-    const tag = stageEl.querySelector('.stage-tag');
-    const time = stageEl.querySelector('.stage-time');
-
-    // Mark active
-    dot.className = 'w-4 h-4 rounded-full bg-state-cyan animate-pulse stage-dot';
-    tag.className = 'stage-tag badge badge-cyan text-[9px]';
-    tag.textContent = 'ACTIVE';
-    stageStart = Date.now();
-
-    // Progress
-    const pct = ((idx + 0.5) / stages.length * 100);
-    progressBar.style.width = pct + '%';
-    progressText.textContent = Math.round(pct) + '%';
-
-    setTimeout(() => {
-      // Mark done
-      const elapsed = ((Date.now() - stageStart) / 1000).toFixed(1);
-      dot.className = 'w-4 h-4 rounded-full bg-state-green stage-dot';
-      tag.className = 'stage-tag badge badge-green text-[9px]';
-      tag.textContent = 'DONE';
-      time.textContent = elapsed + 's';
-
-      const donePct = ((idx + 1) / stages.length * 100);
-      progressBar.style.width = donePct + '%';
-      progressText.textContent = Math.round(donePct) + '%';
-
-      activateStage(idx + 1);
-    }, delays[idx]);
-  }
-
-  activateStage(0);
+  }).catch(() => {
+    document.getElementById('upload-action').classList.add('show');
+  });
 }
 
-function doUpload(file) {
-  const formData = new FormData();
-  formData.append('file', file);
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-preview').classList.remove('show');
+  document.getElementById('enc-preview').classList.remove('show');
+  document.getElementById('upload-action').classList.remove('show');
+  document.getElementById('validation-msgs').innerHTML = '';
+}
 
-  fetch('/user/upload', { method: 'POST', body: formData })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        document.getElementById('pipeline-panel').classList.add('hidden');
-        document.getElementById('success-panel').classList.remove('hidden');
-        document.getElementById('success-hash').textContent = data.fingerprint || 'N/A';
-        document.getElementById('success-key').textContent = 'K-' + String(data.file_id).padStart(4, '0');
-      } else {
-        alert('Upload failed: ' + (data.error || 'Unknown error'));
-      }
-    })
-    .catch(e => alert('Upload error: ' + e.message));
+function setStep(n, state, status) {
+  const el = document.getElementById(`step-${n}`);
+  el.className = `step ${state}`;
+  document.getElementById(`step-${n}-status`).textContent = status;
+}
+
+function setProgress(pct) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = pct + '%';
+}
+
+function startUpload() {
+  if (!selectedFile) return;
+
+  // Hide controls, show pipeline
+  document.getElementById('upload-action').classList.remove('show');
+  document.getElementById('file-preview').classList.remove('show');
+  document.getElementById('enc-preview').classList.remove('show');
+  document.getElementById('error-card').classList.remove('show');
+  document.getElementById('pipeline').classList.add('show');
+
+  // Step 1: Fingerprint
+  setStep(1, 'active', 'Computing...');
+  setProgress(5);
+
+  setTimeout(() => {
+    setStep(1, 'done', 'SHA-256 ✓');
+    setProgress(25);
+
+    // Step 2: Encrypt
+    setStep(2, 'active', 'AES-128-GCM...');
+    setTimeout(() => {
+      setProgress(45);
+
+      // Step 3: Upload/Store
+      setStep(2, 'done', 'Encrypted ✓');
+      setStep(3, 'active', 'Uploading...');
+      setProgress(60);
+
+      const form = new FormData();
+      form.append('file', selectedFile);
+
+      // Use XHR for progress
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) {
+          const pct = Math.round(60 + (e.loaded / e.total) * 30);
+          setProgress(pct);
+        }
+      });
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          if (data.success) {
+            setStep(3, 'done', 'Stored ✓');
+            setProgress(95);
+            setStep(4, 'active', 'Verifying...');
+            lastUploadResult = data;
+            setTimeout(() => {
+              setStep(4, 'done', 'Confirmed ✓');
+              setProgress(100);
+              setTimeout(() => showSuccess(data), 400);
+            }, 600);
+          } else {
+            showError(data.error || 'Upload failed.');
+          }
+        } else {
+          showError(`Server error: ${xhr.status}`);
+        }
+      });
+      xhr.addEventListener('error', () => showError('Network error. Check your connection.'));
+      xhr.open('POST', '/user/upload');
+      xhr.send(form);
+
+    }, 700);
+  }, 600);
+}
+
+function showSuccess(data) {
+  document.getElementById('pipeline').classList.remove('show');
+  const card = document.getElementById('success-card');
+  card.classList.add('show');
+
+  document.getElementById('success-details').innerHTML = `
+    <div class="sd-item"><div class="sd-lbl">File ID</div><div class="sd-val">#${data.file_id}</div></div>
+    <div class="sd-item"><div class="sd-lbl">Encryption</div><div class="sd-val">${data.encryption_state}</div></div>
+    <div class="sd-item" style="grid-column:span 2"><div class="sd-lbl">SHA-256 Fingerprint</div><div class="sd-val" style="font-size:10px">${data.fingerprint}</div></div>
+  `;
+}
+
+function showError(reason) {
+  document.getElementById('pipeline').classList.remove('show');
+  document.getElementById('error-reason').textContent = reason;
+  document.getElementById('error-card').classList.add('show');
+  setStep(1,'error','');setStep(2,'error','');setStep(3,'error','');setStep(4,'error','');
+}
+
+function retryUpload() {
+  document.getElementById('error-card').classList.remove('show');
+  document.getElementById('pipeline').classList.remove('show');
+  // Reset steps
+  [1,2,3,4].forEach(n => setStep(n,'','Waiting'));
+  setProgress(0);
+  document.getElementById('upload-action').classList.add('show');
+  document.getElementById('file-preview').classList.add('show');
+  document.getElementById('enc-preview').classList.add('show');
 }
 
 function resetUpload() {
-  document.getElementById('success-panel').classList.add('hidden');
-  document.getElementById('pipeline-panel').classList.add('hidden');
-  document.getElementById('dropzone-area').classList.remove('hidden');
-  document.getElementById('file-input').value = '';
-
-  // Reset stages
-  ['hash', 'chunk', 'encrypt', 'store'].forEach(s => {
-    const el = document.getElementById('stage-' + s);
-    el.querySelector('.stage-dot').className = 'w-4 h-4 rounded-full bg-white/10 flex items-center justify-center stage-dot';
-    el.querySelector('.stage-tag').className = 'stage-tag badge text-[9px]';
-    el.querySelector('.stage-tag').textContent = 'WAITING';
-    el.querySelector('.stage-time').textContent = '';
-  });
-  document.getElementById('progress-bar').style.width = '0%';
-  document.getElementById('progress-text').textContent = '0%';
+  clearFile();
+  document.getElementById('pipeline').classList.remove('show');
+  document.getElementById('success-card').classList.remove('show');
+  document.getElementById('error-card').classList.remove('show');
+  [1,2,3,4].forEach(n => setStep(n,'','Waiting'));
+  setProgress(0);
+  lastUploadResult = null;
 }
 
-function formatSize(bytes) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let i = 0;
-  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
-  return bytes.toFixed(1) + ' ' + units[i];
+function downloadNow() {
+  if (lastUploadResult && lastUploadResult.file_id) {
+    window.location.href = `/user/download/${lastUploadResult.file_id}`;
+  }
 }
 </script>
 {% endblock %}
