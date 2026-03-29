@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Create Account — QuantumShield{% endblock %}
+{% block head %}
+<style>
+  .auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+  .auth-left{background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;position:relative;overflow:hidden}
+  .auth-left-bg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(129,140,248,0.07),transparent 65%);pointer-events:none}
+  .auth-right{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;position:relative;overflow-y:auto}
+  .auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .auth-brand .logo-icon{width:48px;height:48px;border-radius:14px}
+  .auth-brand-name{font-size:26px;font-weight:700;letter-spacing:-.8px}
+  .auth-brand-name span{background:var(--grad90);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .auth-tagline{font-size:14px;color:var(--tm);margin-bottom:40px;font-family:'JetBrains Mono',monospace}
+  .features-list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+  .feat-row{display:flex;align-items:flex-start;gap:12px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px}
+  .feat-check{width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .feat-check svg{width:12px;height:12px;color:var(--green)}
+  .feat-row h4{font-size:13px;font-weight:700;margin-bottom:2px}
+  .feat-row p{font-size:12px;color:var(--ts)}
+  .form-card{width:100%;max-width:380px}
+  .form-header{margin-bottom:28px}
+  .form-header h1{font-size:26px;font-weight:700;letter-spacing:-.8px}
+  .form-header p{font-size:14px;color:var(--ts);margin-top:6px}
+  .form-group{margin-bottom:16px}
+  .input-wrap{position:relative}
+  .input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--tm);pointer-events:none}
+  .input-icon svg{width:16px;height:16px}
+  .input-with-icon{padding-left:44px}
+  .eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--tm);transition:color .2s}
+  .eye-btn:hover{color:var(--ts)}
+  .pw-strength{height:3px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden}
+  .pw-strength-bar{height:100%;border-radius:2px;transition:width .4s,background .4s;width:0%}
+  .pw-hint{font-size:11px;color:var(--tm);margin-top:5px}
+  .terms-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:13px;color:var(--ts)}
+  .terms-row input[type=checkbox]{width:15px;height:15px;margin-top:2px;accent-color:var(--cyan);flex-shrink:0}
+  .terms-row a{color:var(--cyan);font-weight:500}
+  .auth-footer{margin-top:20px;text-align:center;font-size:13px;color:var(--ts)}
+  .auth-footer a{color:var(--cyan);font-weight:600;transition:opacity .2s}
+  .auth-footer a:hover{opacity:.8}
+  .back-link{position:absolute;top:24px;left:24px;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tm);transition:color .2s}
+  .back-link:hover{color:var(--ts)}
+  .back-link svg{width:15px;height:15px}
+  @media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-left{display:none}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-left-bg"></div>
+    <div style="position:relative;z-index:2;width:100%;max-width:380px">
+      <div class="auth-brand">
+        <div class="logo-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <span class="auth-brand-name">Quantum<span>Shield</span></span>
+      </div>
+      <p class="auth-tagline">Your vault. Your encryption.</p>
+
+      <div class="features-list">
+        <div class="feat-row">
+          <div class="feat-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><h4>Automatic Encryption</h4><p>Every file encrypted with AES-128-GCM on upload. No manual steps.</p></div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><h4>Real-Time Threat Defense</h4><p>ML engine watches access patterns. Escalates encryption automatically.</p></div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><h4>Complete Audit Trail</h4><p>Every key event and state change logged with full timestamps.</p></div>
+        </div>
+        <div class="feat-row">
+          <div class="feat-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div><h4>Your Files, Only You</h4><p>Per-user isolation. No cross-user access, ever — not even for admins.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to Home
+    </a>
+    <div class="form-card">
+      <div class="form-header">
+        <h1>Create your vault</h1>
+        <p>Register to start encrypting your files with adaptive security.</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#FCA5A5;margin-bottom:16px">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+          <label class="input-label">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input class="input input-with-icon" type="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="input-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input class="input input-with-icon" type="password" id="pw1" name="password" placeholder="Min 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value)" style="padding-right:44px"/>
+            <button type="button" class="eye-btn" onclick="togglePw('pw1')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="pw-strength"><div class="pw-strength-bar" id="pwbar"></div></div>
+          <div class="pw-hint" id="pwhint">Enter a password</div>
+        </div>
+        <div class="form-group">
+          <label class="input-label">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input class="input input-with-icon" type="password" id="pw2" name="confirm_password" placeholder="Repeat password" required autocomplete="new-password" style="padding-right:44px"/>
+            <button type="button" class="eye-btn" onclick="togglePw('pw2')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <div class="terms-row">
+          <input type="checkbox" id="terms" required/>
+          <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px">Create Account →</button>
+      </form>
+
+      <div class="auth-footer">Already have an account? <a href="{{ url_for('login') }}">Sign in</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePw(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+function checkStrength(v) {
+  const bar = document.getElementById('pwbar');
+  const hint = document.getElementById('pwhint');
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (v.length >= 12) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const levels = [
+    { w: '0%', c: 'transparent', t: 'Enter a password' },
+    { w: '25%', c: 'var(--red)', t: 'Weak' },
+    { w: '50%', c: 'var(--amber)', t: 'Fair' },
+    { w: '75%', c: 'var(--cyan)', t: 'Good' },
+    { w: '100%', c: 'var(--green)', t: 'Strong ✓' },
+  ];
+  const l = levels[Math.min(score, 4)];
+  bar.style.width = l.w; bar.style.background = l.c; hint.textContent = l.t;
+  hint.style.color = l.c === 'transparent' ? 'var(--tm)' : l.c;
+}
+</script>
+{% endblock %}
