@@ -1,282 +1,347 @@
 {% extends "base.html" %}
+{% block title %}File Matrix — QuantumShield{% endblock %}
 
-{% block title %}File Matrix — Quantum-Aware Enterprise{% endblock %}
+{% block head %}
+<style>
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--ts);transition:all .2s;text-decoration:none;border:1px solid transparent;margin-bottom:2px}
+.sidebar-link svg{width:15px;height:15px;flex-shrink:0}
+.sidebar-link:hover{background:rgba(255,255,255,0.04);color:var(--tp)}
+.sidebar-link.active{background:rgba(56,189,248,0.07);border-color:rgba(56,189,248,0.18);color:var(--cyan)}
+.nav-divider{height:1px;background:var(--border);margin:10px 0}
+.nav-section{font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;padding:10px 12px 4px}
+
+/* glass card */
+.g-card{background:linear-gradient(160deg,rgba(255,255,255,0.035) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);transition:border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
+.g-card::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:0}
+.g-card>*{position:relative;z-index:1}
+
+/* stats strip */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.ss-card{padding:18px 20px}
+.ss-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:12px}
+.ss-icon svg{width:15px;height:15px}
+.ss-val{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-1px}
+.ss-lbl{font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.09em;margin-top:6px}
+
+/* filter bar */
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:280px}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--tm);pointer-events:none}
+.search-wrap input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:8px 12px 8px 33px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;font-family:inherit}
+.search-wrap input::placeholder{color:var(--tm)}
+.search-wrap input:focus{border-color:rgba(56,189,248,0.4)}
+.f-select{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--ts);outline:none;cursor:pointer;transition:border-color .2s;font-family:'JetBrains Mono',monospace}
+.f-select:focus{border-color:rgba(56,189,248,0.4)}
+.f-pill{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:11px;font-weight:600;color:var(--tm);cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace}
+.f-pill:hover{border-color:var(--border2);color:var(--ts)}
+.f-pill.on{background:rgba(56,189,248,0.08);border-color:rgba(56,189,248,0.28);color:var(--cyan)}
+.ml-auto{margin-left:auto}
+
+/* table */
+.tbl-wrap{background:linear-gradient(160deg,rgba(255,255,255,0.035) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)}
+.tbl-head{display:grid;grid-template-columns:36px 32px 1fr 90px 110px 120px 110px 120px;gap:10px;padding:11px 18px;font-size:9px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid rgba(255,255,255,0.05);font-family:'JetBrains Mono',monospace}
+.tbl-row{display:grid;grid-template-columns:36px 32px 1fr 90px 110px 120px 110px 120px;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .15s;cursor:pointer}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row:hover{background:rgba(255,255,255,0.02)}
+.tbl-row.sel{background:rgba(56,189,248,0.04)}
+.f-name{font-size:13px;font-weight:600;color:var(--tp);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f-sub{font-size:10px;color:var(--tm);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.f-size{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--ts)}
+.f-date{font-size:11px;color:var(--tm)}
+.f-hash{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px}
+
+/* action buttons */
+.act-row{display:flex;gap:5px;align-items:center}
+.act-btn{padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;border:1px solid;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.ab-c{background:rgba(56,189,248,0.07);border-color:rgba(56,189,248,0.22);color:var(--cyan)}
+.ab-c:hover{background:rgba(56,189,248,0.15)}
+.ab-r{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.22);color:var(--red)}
+.ab-r:hover{background:rgba(239,68,68,0.15)}
+
+/* file type icons */
+.ftype{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
+/* expand panel */
+.exp-panel{display:none;padding:14px 18px 16px;background:rgba(255,255,255,0.015);border-top:1px solid rgba(255,255,255,0.04)}
+.exp-panel.open{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.exp-group h4{font-size:9px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.exp-item{margin-bottom:8px}
+.exp-lbl{font-size:9px;color:var(--tm);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.exp-val{font-size:11px;color:var(--ts);font-family:'JetBrains Mono',monospace;word-break:break-all}
+
+/* bulk bar */
+.bulk-bar{display:none;align-items:center;gap:10px;padding:11px 16px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.18);border-radius:11px;margin-bottom:14px}
+.bulk-bar.show{display:flex}
+.bulk-count{font-size:12px;font-weight:600;color:var(--cyan);flex:1}
+.blk-btn{padding:6px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;border:1px solid;display:flex;align-items:center;gap:5px}
+.blk-r{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.22);color:var(--red)}
+.blk-r:hover{background:rgba(239,68,68,0.18)}
+.blk-g{background:rgba(255,255,255,0.04);border-color:var(--border);color:var(--ts)}
+.blk-g:hover{border-color:var(--border2);color:var(--tp)}
+
+.empty-tbl{text-align:center;padding:52px 20px;color:var(--tm);font-size:13px}
+input[type=checkbox]{width:14px;height:14px;accent-color:var(--cyan);cursor:pointer}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="flex min-h-screen">
-  <!-- SIDEBAR (same as dashboard) -->
-  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
-    <div class="px-6 py-5 border-b border-white/[0.07]">
-      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <span class="logo-name">Quantum<span>Shield</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="{{ url_for('admin.files_page') }}" class="sidebar-link active"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>File Matrix</a>
+    <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Threat Intel</a>
+    <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16"/><line x1="12" y1="8" x2="18.5" y2="16"/></svg>Topology</a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Actions</div>
+    <a href="{{ url_for('admin.api_logs_export') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</a>
+    <a href="{{ url_for('logout') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="user-card"><div class="user-av">A</div><div><div class="user-name">Admin</div><div class="user-role">admin@qaware.com</div></div></div>
+  </div>
+</aside>
+
+<div class="main-wrap">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:15px;font-weight:700;letter-spacing:-.3px">File Matrix</span>
+      <span id="file-badge" class="chip chip-blue" style="font-size:10px;padding:3px 10px">0 files</span>
     </div>
-    <nav class="flex-1 py-4 px-3 space-y-1">
-      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-        Dashboard
-      </a>
-      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-        File Matrix
-      </a>
-      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        Threat Intelligence
-      </a>
-      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-        Crypto Topology
-      </a>
-      <div class="border-t border-white/[0.07] my-4"></div>
-      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        Settings
-      </a>
-    </nav>
-    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-      <div>
-        <div class="text-xs font-body text-white/80">Admin</div>
-        <div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div>
-      </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-ghost" style="padding:7px 14px;font-size:12px" onclick="loadFiles()">↺ Refresh</button>
+      <a href="{{ url_for('admin.api_logs_export') }}" class="btn-primary" style="padding:7px 14px;font-size:12px">⬇ Export CSV</a>
     </div>
-  </aside>
+  </div>
 
-  <!-- MAIN -->
-  <main class="ml-[240px] flex-1 min-h-screen">
-    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07]">
-      <div class="flex items-center justify-between px-6 py-4">
-        <h1 class="font-heading text-lg font-bold">File Matrix</h1>
-        <div class="flex items-center gap-4">
-          <button class="relative text-white/40 hover:text-white transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          </button>
-          <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-        </div>
+  <div class="page-body">
+
+    <!-- Stats strip -->
+    <div class="stats-strip">
+      <div class="g-card ss-card">
+        <div class="ss-icon" style="background:rgba(56,189,248,0.1)"><svg fill="none" stroke="var(--cyan)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="ss-val" style="color:var(--cyan)" id="cnt-all">0</div>
+        <div class="ss-lbl">Total Files</div>
       </div>
-    </header>
-
-    <div class="p-6">
-      <!-- Action bar -->
-      <div class="flex flex-wrap items-center gap-3 mb-6">
-        <label class="px-5 py-2 rounded-full bg-state-cyan/20 border border-state-cyan/30 text-state-cyan text-xs font-bold hover:bg-state-cyan/30 transition cursor-pointer font-mono">
-          ↑ UPLOAD DATA
-          <input type="file" class="hidden" id="file-upload-input" />
-        </label>
-        <button onclick="forceRotateAll()" class="px-5 py-2 rounded-full bg-state-amber/20 border border-state-amber/30 text-state-amber text-xs font-bold hover:bg-state-amber/30 transition font-mono">
-          ⟳ FORCE ROTATION
-        </button>
-        <button class="px-5 py-2 rounded-full bg-state-red/20 border border-state-red/30 text-state-red text-xs font-bold hover:bg-state-red/30 transition font-mono">
-          ✕ PURGE CACHE
-        </button>
-        <div class="flex-1"></div>
-        <input id="search-input" type="text" placeholder="Search files..."
-               class="bg-white/[0.04] border border-white/[0.07] rounded-lg px-4 py-2 text-xs text-white font-mono w-48 focus:outline-none focus:border-state-cyan/30" oninput="filterTable()"/>
-        <select id="filter-select" onchange="filterTable()"
-                class="bg-white/[0.04] border border-white/[0.07] rounded-lg px-4 py-2 text-xs text-white font-mono focus:outline-none">
-          <option value="all">All Files</option>
-          <option value="AES-128">AES-128</option>
-          <option value="AES-256">AES-256</option>
-          <option value="CONT_ROTATION">CONT_ROTATION</option>
-        </select>
+      <div class="g-card ss-card">
+        <div class="ss-icon" style="background:rgba(16,185,129,0.1)"><svg fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="ss-val" style="color:var(--green)" id="cnt-128">0</div>
+        <div class="ss-lbl">AES-128</div>
       </div>
-
-      <!-- File table -->
-      <div class="glass-card rounded-2xl overflow-hidden">
-        <table class="w-full text-xs font-mono">
-          <thead>
-            <tr class="border-b border-white/[0.07] text-white/30 uppercase tracking-wider">
-              <th class="text-left px-4 py-3">FILE_ID</th>
-              <th class="text-left px-4 py-3">NAME</th>
-              <th class="text-left px-4 py-3">SIZE</th>
-              <th class="text-left px-4 py-3">ENCRYPTION</th>
-              <th class="text-left px-4 py-3">UPLOADED</th>
-              <th class="text-left px-4 py-3">FINGERPRINT</th>
-              <th class="text-left px-4 py-3">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody id="file-tbody">
-            <tr><td colspan="7" class="text-center text-white/20 py-12 font-body">Loading files...</td></tr>
-          </tbody>
-        </table>
+      <div class="g-card ss-card">
+        <div class="ss-icon" style="background:rgba(245,158,11,0.1)"><svg fill="none" stroke="var(--amber)" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+        <div class="ss-val" style="color:var(--amber)" id="cnt-256">0</div>
+        <div class="ss-lbl">AES-256</div>
       </div>
-
-      <!-- Pagination -->
-      <div class="flex items-center justify-between mt-4">
-        <span id="page-info" class="text-xs text-white/30 font-mono"></span>
-        <div class="flex gap-2" id="page-buttons"></div>
+      <div class="g-card ss-card">
+        <div class="ss-icon" style="background:rgba(239,68,68,0.1)"><svg fill="none" stroke="var(--red)" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
+        <div class="ss-val" style="color:var(--red)" id="cnt-rot">0</div>
+        <div class="ss-lbl">CONT_ROT</div>
       </div>
     </div>
 
-    <!-- Upload pipeline drawer -->
-    <div id="upload-drawer" class="fixed top-0 right-0 h-full w-[320px] bg-surface border-l border-white/[0.07] z-50 transform translate-x-full transition-transform duration-500">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="font-heading text-sm font-bold">Upload Pipeline</h3>
-          <button onclick="closeDrawer()" class="text-white/30 hover:text-white">&times;</button>
-        </div>
-        <div id="pipeline-stages" class="space-y-4">
-          <div class="flex items-center gap-3" data-stage="hash"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">HASHING</div><div class="text-[10px] text-white/30">Computing SHA-256</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
-          <div class="flex items-center gap-3" data-stage="chunk"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">CHUNKING</div><div class="text-[10px] text-white/30">Segmenting data</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
-          <div class="flex items-center gap-3" data-stage="encrypt"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">ENCRYPTING</div><div class="text-[10px] text-white/30">AES-128-GCM</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
-          <div class="flex items-center gap-3" data-stage="store"><div class="w-3 h-3 rounded-full bg-white/20"></div><div><div class="text-xs font-mono">STORING</div><div class="text-[10px] text-white/30">Vault insertion</div></div><span class="ml-auto badge text-[9px]">WAITING</span></div>
-        </div>
-        <div class="mt-6 h-1.5 bg-white/[0.05] rounded-full"><div id="pipeline-bar" class="h-full bg-state-cyan rounded-full transition-all duration-500" style="width:0"></div></div>
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search files or owners..." id="search-q" oninput="applyFilters()"/>
+      </div>
+      <select class="f-select" id="filter-state" onchange="applyFilters()">
+        <option value="">All States</option>
+        <option value="AES-128">AES-128</option>
+        <option value="AES-256">AES-256</option>
+        <option value="CONT_ROTATION">CONT_ROT</option>
+      </select>
+      <div style="display:flex;gap:5px;margin-left:auto">
+        <button class="f-pill on" data-s="" onclick="setStateFilter(this,'')">All</button>
+        <button class="f-pill" data-s="AES-128" onclick="setStateFilter(this,'AES-128')">AES-128</button>
+        <button class="f-pill" data-s="AES-256" onclick="setStateFilter(this,'AES-256')">AES-256</button>
+        <button class="f-pill" data-s="CONT_ROTATION" onclick="setStateFilter(this,'CONT_ROTATION')">CONT_ROT</button>
       </div>
     </div>
-  </main>
+
+    <!-- Bulk bar -->
+    <div class="bulk-bar" id="bulk-bar">
+      <span class="bulk-count" id="bulk-count">0 selected</span>
+      <button class="blk-btn blk-r" onclick="bulkDelete()">🗑 Delete Selected</button>
+      <button class="blk-btn blk-g" onclick="clearSel()">✕ Clear</button>
+    </div>
+
+    <!-- Table -->
+    <div class="tbl-wrap">
+      <div class="tbl-head">
+        <div><input type="checkbox" id="sel-all" onchange="toggleAll(this)"/></div>
+        <div></div>
+        <div>File</div>
+        <div>Size</div>
+        <div>State</div>
+        <div>SHA-256</div>
+        <div>Uploaded</div>
+        <div>Actions</div>
+      </div>
+      <div id="tbl-body">
+        <div class="empty-tbl">⏳ Loading files...</div>
+      </div>
+    </div>
+
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-let allFiles = [];
-let currentPage = 1;
-const perPage = 8;
+let allFiles=[];
+let selIds=new Set();
+let stateFilter='';
 
-function loadFiles() {
-  fetch('/admin/files/data').then(r => r.json()).then(files => {
-    allFiles = files;
-    filterTable();
-  }).catch(() => {
-    document.getElementById('file-tbody').innerHTML = '<tr><td colspan="7" class="text-center text-white/20 py-12 font-body">No files found</td></tr>';
-  });
+const typeOf=n=>{
+  const e=n.split('.').pop().toLowerCase();
+  if(['pdf'].includes(e))return['📄','rgba(239,68,68,0.12)'];
+  if(['png','jpg','jpeg','gif','svg','webp'].includes(e))return['🖼','rgba(129,140,248,0.12)'];
+  if(['js','ts','py','html','css','json','sh','go','rs','java','c','cpp'].includes(e))return['💻','rgba(16,185,129,0.12)'];
+  if(['zip','tar','gz','rar','7z'].includes(e))return['📦','rgba(245,158,11,0.12)'];
+  return['📁','rgba(255,255,255,0.06)'];
+};
+const fmtSize=b=>{if(!b)return'—';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB'};
+const fmtDate=s=>s?s.replace('T',' ').slice(0,16):'—';
+const stateEl=s=>{
+  if(s==='AES-128')return`<span class="enc-aes128">AES-128</span>`;
+  if(s==='AES-256')return`<span class="enc-aes256">AES-256</span>`;
+  return`<span class="enc-controt">CONT_ROT</span>`;
+};
+const secStatus=s=>{
+  if(s==='CONT_ROTATION')return`<span style="color:var(--red);font-size:10px;display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace"><span class="dot dot-red" style="width:5px;height:5px"></span>Attack</span>`;
+  if(s==='AES-256')return`<span style="color:var(--amber);font-size:10px;display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace"><span class="dot dot-amber" style="width:5px;height:5px"></span>Elevated</span>`;
+  return`<span style="color:var(--green);font-size:10px;display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace"><span class="dot dot-green" style="width:5px;height:5px"></span>Normal</span>`;
+};
+
+function applyFilters(){
+  let f=[...allFiles];
+  const q=document.getElementById('search-q').value.toLowerCase();
+  const st=document.getElementById('filter-state').value||stateFilter;
+  if(q)f=f.filter(x=>x.original_name.toLowerCase().includes(q)||(x.user_email||'').toLowerCase().includes(q));
+  if(st)f=f.filter(x=>x.encryption_state===st);
+  renderTable(f);
 }
 
-function filterTable() {
-  const search = document.getElementById('search-input').value.toLowerCase();
-  const filter = document.getElementById('filter-select').value;
-  let filtered = allFiles.filter(f => {
-    const matchSearch = !search || f.original_name.toLowerCase().includes(search) || String(f.id).includes(search);
-    const matchFilter = filter === 'all' || f.encryption_state === filter;
-    return matchSearch && matchFilter;
-  });
-  currentPage = 1;
-  renderTable(filtered);
+function setStateFilter(btn,val){
+  document.querySelectorAll('.f-pill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  stateFilter=val;
+  document.getElementById('filter-state').value=val;
+  applyFilters();
 }
 
-function renderTable(files) {
-  const tbody = document.getElementById('file-tbody');
-  const totalPages = Math.ceil(files.length / perPage) || 1;
-  const start = (currentPage - 1) * perPage;
-  const pageFiles = files.slice(start, start + perPage);
-
-  if (pageFiles.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white/20 py-12 font-body">No files match your filter</td></tr>';
-  } else {
-    tbody.innerHTML = pageFiles.map(f => {
-      const isCR = f.encryption_state === 'CONT_ROTATION';
-      const borderClass = isCR ? 'border-l-[3px] border-l-state-red' : '';
-      const badgeCls = f.encryption_state === 'AES-128' ? 'badge-cyan' : f.encryption_state === 'AES-256' ? 'badge-amber' : 'badge-red';
-      const dotAnim = f.encryption_state === 'AES-256' ? ' animate-pulse' : isCR ? ' animate-spin-slow' : '';
-      const fp = f.sha256_fingerprint ? f.sha256_fingerprint.substring(0, 12) + '...' : 'N/A';
-      return `<tr class="border-b border-white/[0.04] hover:bg-white/[0.02] cursor-pointer transition ${borderClass}" onclick="toggleRow(this, ${f.id})">
-        <td class="px-4 py-3 text-white/50">#${f.id}</td>
-        <td class="px-4 py-3 text-white/80">${f.original_name}</td>
-        <td class="px-4 py-3 text-white/50">${formatSize(f.file_size)}</td>
-        <td class="px-4 py-3"><span class="badge ${badgeCls}"><span class="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1${dotAnim}"></span>${f.encryption_state}</span></td>
-        <td class="px-4 py-3 text-white/40">${f.created_at || 'N/A'}</td>
-        <td class="px-4 py-3 text-white/30">${fp}</td>
-        <td class="px-4 py-3">
-          <button onclick="event.stopPropagation(); rotateFile(${f.id})" class="px-3 py-1 rounded-full border border-state-amber/30 text-state-amber text-[10px] hover:bg-state-amber/10 transition mr-1">Rotate</button>
-          <button onclick="event.stopPropagation(); isolateFile(${f.id})" class="px-3 py-1 rounded-full border border-state-red/30 text-state-red text-[10px] hover:bg-state-red/10 transition">Isolate</button>
-        </td>
-      </tr>
-      <tr class="hidden expand-row" id="expand-${f.id}"><td colspan="7" class="px-4 py-3 bg-white/[0.01]">
-        <div class="grid grid-cols-4 gap-4 text-[10px]">
-          <div><span class="text-white/30">SHA-256:</span><br><span class="text-white/50">${f.sha256_fingerprint || 'N/A'}</span></div>
-          <div><span class="text-white/30">KEY ID:</span><br><span class="text-state-cyan">${f.current_key_id || 'N/A'}</span></div>
-          <div><span class="text-white/30">OWNER:</span><br><span class="text-white/50">${f.user_email || 'N/A'}</span></div>
-          <div><span class="text-white/30">STORED:</span><br><span class="text-white/50">${f.created_at || 'N/A'}</span></div>
+function renderTable(files){
+  const el=document.getElementById('tbl-body');
+  if(!files.length){el.innerHTML='<div class="empty-tbl">No files match your filters.</div>';return;}
+  el.innerHTML=files.map(f=>{
+    const[icon,bg]=typeOf(f.original_name);
+    const sel=selIds.has(f.id);
+    return`<div>
+      <div class="tbl-row${sel?' sel':''}" onclick="rowClick(event,${f.id})">
+        <div onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel(${f.id},this)"/></div>
+        <div><div class="ftype" style="background:${bg}">${icon}</div></div>
+        <div>
+          <div class="f-name">${f.original_name}</div>
+          <div class="f-sub">#${f.id} · ${f.user_email||'—'}</div>
         </div>
-      </td></tr>`;
-    }).join('');
-  }
-
-  document.getElementById('page-info').textContent = `Showing ${start + 1}–${Math.min(start + perPage, files.length)} of ${files.length} files`;
-  const btns = document.getElementById('page-buttons');
-  btns.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = `px-3 py-1 rounded-lg text-xs font-mono ${i === currentPage ? 'bg-state-cyan/20 text-state-cyan' : 'bg-white/[0.04] text-white/40 hover:text-white'}`;
-    btn.textContent = i;
-    btn.onclick = () => { currentPage = i; renderTable(files); };
-    btns.appendChild(btn);
-  }
+        <div class="f-size">${fmtSize(f.file_size)}</div>
+        <div>${stateEl(f.encryption_state)}</div>
+        <div class="f-hash" title="${f.sha256_fingerprint||''}">${(f.sha256_fingerprint||'').slice(0,14)}…</div>
+        <div class="f-date">${fmtDate(f.created_at)}</div>
+        <div class="act-row" onclick="event.stopPropagation()">
+          <button class="act-btn ab-c" onclick="rotateFile(${f.id})">↺ Rotate</button>
+          <button class="act-btn ab-r" onclick="isolateFile(${f.id})">🔴</button>
+        </div>
+      </div>
+      <div class="exp-panel" id="exp-${f.id}">
+        <div class="exp-group">
+          <h4>Encryption</h4>
+          <div class="exp-item"><div class="exp-lbl">Algorithm</div><div class="exp-val">${f.encryption_state}</div></div>
+          <div class="exp-item"><div class="exp-lbl">Key ID</div><div class="exp-val">K-${String(f.current_key_id||0).padStart(4,'0')}</div></div>
+          <div class="exp-item"><div class="exp-lbl">Security</div><div style="margin-top:3px">${secStatus(f.encryption_state)}</div></div>
+        </div>
+        <div class="exp-group">
+          <h4>Integrity</h4>
+          <div class="exp-item"><div class="exp-lbl">SHA-256</div><div class="exp-val" style="font-size:9px;line-height:1.5">${f.sha256_fingerprint||'—'}</div></div>
+        </div>
+        <div class="exp-group">
+          <h4>Metadata</h4>
+          <div class="exp-item"><div class="exp-lbl">Owner</div><div class="exp-val">${f.user_email||'—'}</div></div>
+          <div class="exp-item"><div class="exp-lbl">Size</div><div class="exp-val">${fmtSize(f.file_size)}</div></div>
+          <div class="exp-item"><div class="exp-lbl">Uploaded</div><div class="exp-val">${fmtDate(f.created_at)}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function toggleRow(row, id) {
-  const expand = document.getElementById('expand-' + id);
-  if (expand) expand.classList.toggle('hidden');
+function updateStats(files){
+  document.getElementById('cnt-all').textContent=files.length;
+  document.getElementById('cnt-128').textContent=files.filter(f=>f.encryption_state==='AES-128').length;
+  document.getElementById('cnt-256').textContent=files.filter(f=>f.encryption_state==='AES-256').length;
+  document.getElementById('cnt-rot').textContent=files.filter(f=>f.encryption_state==='CONT_ROTATION').length;
+  document.getElementById('file-badge').textContent=files.length+' file'+(files.length!==1?'s':'');
 }
 
-function formatSize(bytes) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let i = 0;
-  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++; }
-  return bytes.toFixed(1) + ' ' + units[i];
+function rowClick(e,id){
+  if(e.target.closest('.act-row')||e.target.tagName==='INPUT')return;
+  document.getElementById('exp-'+id).classList.toggle('open');
 }
 
-function rotateFile(id) {
-  fetch('/admin/rotate/' + id, { method: 'POST' }).then(r => r.json()).then(() => loadFiles());
+function toggleSel(id,cb){
+  cb.checked?selIds.add(id):selIds.delete(id);
+  updateBulk();
+  cb.closest('.tbl-row').classList.toggle('sel',cb.checked);
 }
 
-function isolateFile(id) {
-  fetch('/admin/api/isolate/' + id, { method: 'POST' }).then(r => r.json()).then(() => loadFiles());
+function toggleAll(cb){
+  allFiles.forEach(f=>{cb.checked?selIds.add(f.id):selIds.delete(f.id);});
+  updateBulk();applyFilters();
 }
 
-function forceRotateAll() {
-  allFiles.forEach(f => rotateFile(f.id));
+function clearSel(){selIds.clear();updateBulk();applyFilters();document.getElementById('sel-all').checked=false;}
+
+function updateBulk(){
+  const n=selIds.size;
+  document.getElementById('bulk-count').textContent=n+' file'+(n!==1?'s':'')+' selected';
+  document.getElementById('bulk-bar').classList.toggle('show',n>0);
 }
 
-// Upload handling
-document.getElementById('file-upload-input').addEventListener('change', function() {
-  if (!this.files[0]) return;
-  const drawer = document.getElementById('upload-drawer');
-  drawer.classList.remove('translate-x-full');
+function bulkDelete(){
+  if(!selIds.size)return;
+  if(!confirm(`Delete ${selIds.size} file(s)? This permanently destroys their encryption keys.`))return;
+  // Admin delete: we need to loop. Note: admin doesn't have /user/delete, so we inform.
+  alert('Bulk delete is handled via the file owner route. Use individual delete buttons per file.');
+}
 
-  const formData = new FormData();
-  formData.append('file', this.files[0]);
+function rotateFile(id){
+  fetch(`/admin/rotate/${id}`,{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.success)loadFiles();
+  });
+}
 
-  // Animate pipeline
-  const stages = ['hash', 'chunk', 'encrypt', 'store'];
-  const bar = document.getElementById('pipeline-bar');
-  let si = 0;
-  const interval = setInterval(() => {
-    if (si >= stages.length) { clearInterval(interval); return; }
-    const stageEl = document.querySelector(`[data-stage="${stages[si]}"]`);
-    stageEl.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-cyan animate-pulse';
-    stageEl.querySelector('.badge').textContent = 'ACTIVE';
-    stageEl.querySelector('.badge').className = 'ml-auto badge badge-cyan text-[9px]';
-    if (si > 0) {
-      const prev = document.querySelector(`[data-stage="${stages[si-1]}"]`);
-      prev.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-green';
-      prev.querySelector('.badge').textContent = 'DONE';
-      prev.querySelector('.badge').className = 'ml-auto badge badge-green text-[9px]';
-    }
-    bar.style.width = ((si + 1) / stages.length * 100) + '%';
-    si++;
-  }, 600);
+function isolateFile(id){
+  if(!confirm(`Force file #${id} to CONT_ROTATION (evasion loop)?`))return;
+  fetch(`/admin/api/isolate/${id}`,{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.success)loadFiles();
+  });
+}
 
-  // Actual upload
-  fetch('/user/upload', { method: 'POST', body: formData })
-    .then(r => r.json())
-    .then(d => {
-      setTimeout(() => {
-        const last = document.querySelector(`[data-stage="store"]`);
-        last.querySelector('.rounded-full').className = 'w-3 h-3 rounded-full bg-state-green';
-        last.querySelector('.badge').textContent = 'DONE';
-        last.querySelector('.badge').className = 'ml-auto badge badge-green text-[9px]';
-        bar.style.width = '100%';
-        loadFiles();
-      }, 2400);
-    }).catch(e => console.error(e));
-});
-
-function closeDrawer() {
-  document.getElementById('upload-drawer').classList.add('translate-x-full');
+function loadFiles(){
+  fetch('/admin/files/data').then(r=>r.json()).then(files=>{
+    allFiles=files;
+    updateStats(files);
+    applyFilters();
+  }).catch(()=>{});
 }
 
 loadFiles();
+setInterval(loadFiles,5000);
 </script>
 {% endblock %}
