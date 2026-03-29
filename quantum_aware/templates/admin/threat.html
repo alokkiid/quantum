@@ -1,267 +1,358 @@
 {% extends "base.html" %}
+{% block title %}Threat Intelligence — QuantumShield{% endblock %}
 
-{% block title %}Threat Intelligence — Quantum-Aware Enterprise{% endblock %}
+{% block head %}
+<style>
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--ts);transition:all .2s;text-decoration:none;border:1px solid transparent;margin-bottom:2px}
+.sidebar-link svg{width:15px;height:15px;flex-shrink:0}
+.sidebar-link:hover{background:rgba(255,255,255,0.04);color:var(--tp)}
+.sidebar-link.active{background:rgba(56,189,248,0.07);border-color:rgba(56,189,248,0.18);color:var(--cyan)}
+.nav-divider{height:1px;background:var(--border);margin:10px 0}
+.nav-section{font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;padding:10px 12px 4px}
+
+/* glass card */
+.g-card{background:linear-gradient(160deg,rgba(255,255,255,0.035) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);transition:border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
+.g-card::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:0}
+.g-card>*{position:relative;z-index:1}
+
+.sec-label{font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+
+/* score ring */
+.score-ring{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.score-inner{width:80px;height:80px;border-radius:50%;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+
+/* security metrics */
+.sec-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px}
+.sec-row:last-child{border-bottom:none}
+.sec-key{color:var(--ts)}
+.sec-val{font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* feature bars */
+.feat-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.feat-row:last-child{border-bottom:none}
+.feat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.feat-name{color:var(--ts)}
+.feat-val{font-family:'JetBrains Mono',monospace;color:var(--cyan)}
+.feat-track{height:3px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden}
+.feat-fill{height:100%;border-radius:999px;transition:width .7s cubic-bezier(.16,1,.3,1)}
+
+/* force buttons */
+.force-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)}
+.force-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:11px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid;transition:all .2s}
+.force-btn:active{transform:scale(.97)}
+.fb-red{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.22);color:#FCA5A5}
+.fb-red:hover{background:rgba(239,68,68,0.14)}
+.fb-green{background:rgba(16,185,129,0.07);border-color:rgba(16,185,129,0.22);color:#6EE7B7}
+.fb-green:hover{background:rgba(16,185,129,0.14)}
+.fb-cyan{background:rgba(56,189,248,0.07);border-color:rgba(56,189,248,0.22);color:var(--cyan2)}
+.fb-cyan:hover{background:rgba(56,189,248,0.14)}
+.fb-full{grid-column:span 2}
+
+/* file selector */
+.file-sel{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;cursor:pointer;font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+.file-sel:focus{border-color:rgba(56,189,248,0.4)}
+
+/* anomaly log */
+.log-head{display:grid;grid-template-columns:72px 100px 110px 90px 1fr;gap:10px;padding:9px 14px;font-size:9px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.09em;border-bottom:1px solid rgba(255,255,255,0.05);font-family:'JetBrains Mono',monospace}
+.log-row{display:grid;grid-template-columns:72px 100px 110px 90px 1fr;gap:10px;padding:9px 14px;font-size:11px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .15s;align-items:center}
+.log-row:last-child{border-bottom:none}
+.log-row:hover{background:rgba(255,255,255,0.02)}
+.log-time{color:var(--tm)}
+.log-type-atk{color:var(--red);font-weight:600}
+.log-type-sus{color:var(--amber);font-weight:600}
+.log-type-ok{color:var(--green);font-weight:600}
+.log-ip{color:var(--ts)}
+.log-file{color:var(--ts);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-detail{color:var(--tm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* filter pills */
+.log-filter-row{display:flex;gap:6px;margin-bottom:12px}
+.lf-pill{padding:5px 12px;border-radius:999px;font-size:10px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .2s;border:1px solid;background:transparent}
+.lf-pill:hover{opacity:.8}
+.lf-all{border-color:var(--border2);color:var(--tm)}
+.lf-all.on,.lf-all:hover{background:rgba(255,255,255,0.06);border-color:var(--border3);color:var(--tp)}
+.lf-atk{border-color:rgba(239,68,68,0.22);color:var(--red)}
+.lf-atk.on,.lf-atk:hover{background:rgba(239,68,68,0.08)}
+.lf-sus{border-color:rgba(245,158,11,0.22);color:var(--amber)}
+.lf-sus.on,.lf-sus:hover{background:rgba(245,158,11,0.08)}
+.lf-ok{border-color:rgba(16,185,129,0.22);color:var(--green)}
+.lf-ok.on,.lf-ok:hover{background:rgba(16,185,129,0.08)}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="flex min-h-screen">
-  <!-- SIDEBAR -->
-  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
-    <div class="px-6 py-5 border-b border-white/[0.07]">
-      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <span class="logo-name">Quantum<span>Shield</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="{{ url_for('admin.files_page') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>File Matrix</a>
+    <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link active"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Threat Intel</a>
+    <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16"/><line x1="12" y1="8" x2="18.5" y2="16"/></svg>Topology</a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Actions</div>
+    <a href="{{ url_for('admin.api_logs_export') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</a>
+    <a href="{{ url_for('logout') }}" class="sidebar-link"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</a>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="user-card"><div class="user-av">A</div><div><div class="user-name">Admin</div><div class="user-role">admin@qaware.com</div></div></div>
+  </div>
+</aside>
+
+<div class="main-wrap">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:15px;font-weight:700;letter-spacing:-.3px">Threat Intelligence</span>
+      <span id="threat-level" class="chip chip-cyan" style="font-size:10px;padding:3px 10px">NORMAL</span>
     </div>
-    <nav class="flex-1 py-4 px-3 space-y-1">
-      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-        Dashboard
-      </a>
-      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-        File Matrix
-      </a>
-      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        Threat Intelligence
-      </a>
-      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-        Crypto Topology
-      </a>
-      <div class="border-t border-white/[0.07] my-4"></div>
-    </nav>
-    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-      <div><div class="text-xs font-body text-white/80">Admin</div><div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div></div>
-    </div>
-  </aside>
+    <button class="btn-ghost" style="padding:7px 14px;font-size:12px" onclick="loadAll()">↺ Refresh</button>
+  </div>
 
-  <main class="ml-[240px] flex-1 min-h-screen">
-    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07]">
-      <div class="flex items-center justify-between px-6 py-4">
-        <h1 class="font-heading text-lg font-bold">Threat Intelligence</h1>
-        <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-      </div>
-    </header>
+  <div class="page-body">
 
-    <div class="p-6 space-y-6">
-      <!-- Access Timeline Chart -->
-      <div class="glass-card rounded-2xl p-6 reveal">
-        <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Access Timeline (24h)</h3>
-        <canvas id="timelineChart" height="100"></canvas>
+    <!-- Top row: 3 columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+
+      <!-- ML Feature Analysis -->
+      <div class="g-card" style="padding:22px 24px">
+        <div class="sec-label">ML Feature Analysis</div>
+        <select class="file-sel" id="feat-file-sel" onchange="loadFeatures()">
+          <option value="">Select file to inspect...</option>
+        </select>
+        <div id="feat-display">
+          <div style="text-align:center;padding:20px 0;font-size:12px;color:var(--tm)">Select a file to inspect ML features</div>
+        </div>
       </div>
 
-      <!-- Filter pills -->
-      <div class="flex gap-2">
-        <button class="filter-pill active px-4 py-1.5 rounded-full border border-state-cyan/30 text-xs font-mono text-state-cyan bg-state-cyan/10" onclick="setFilter('all', this)">ALL</button>
-        <button class="filter-pill px-4 py-1.5 rounded-full border border-white/[0.07] text-xs font-mono text-white/40" onclick="setFilter('suspicious', this)">SUSPICIOUS</button>
-        <button class="filter-pill px-4 py-1.5 rounded-full border border-white/[0.07] text-xs font-mono text-white/40" onclick="setFilter('attack', this)">ATTACKS ONLY</button>
-      </div>
-
-      <!-- Bottom split -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <!-- Left: Anomaly Log -->
-        <div class="lg:col-span-3 glass-card rounded-2xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono">Anomaly Log</h3>
-            <button onclick="exportCSV()" class="px-4 py-1.5 rounded-full border border-white/[0.07] text-[10px] font-mono text-white/40 hover:text-white transition">↓ Export CSV</button>
-          </div>
-          <div id="anomaly-table" class="space-y-1">
-            <div class="text-center text-white/20 text-xs font-body py-8">Loading anomaly data...</div>
+      <!-- Security score -->
+      <div class="g-card" style="padding:22px 24px">
+        <div class="sec-label">Security Score</div>
+        <div style="display:flex;justify-content:center;padding:10px 0 16px">
+          <div>
+            <div class="score-ring" id="score-ring" style="background:conic-gradient(var(--cyan) 0% 0%,rgba(255,255,255,0.05) 0% 100%)">
+              <div class="score-inner">
+                <div style="font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--cyan)" id="score-num">0</div>
+                <div style="font-size:9px;color:var(--tm)">/100</div>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:11px;color:var(--ts);margin-top:10px" id="score-label">Excellent</div>
           </div>
         </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:14px">
+          <div class="sec-row"><span class="sec-key">Encryption</span><span class="sec-val" style="color:var(--cyan)">AES-256-GCM</span></div>
+          <div class="sec-row"><span class="sec-key">Key Rotation</span><span class="sec-val" style="color:var(--green)">Active</span></div>
+          <div class="sec-row"><span class="sec-key">Audit Trail</span><span class="sec-val" style="color:var(--green)">Enabled</span></div>
+          <div class="sec-row"><span class="sec-key">Plaintext on Disk</span><span class="sec-val" style="color:var(--green)">Never</span></div>
+        </div>
+      </div>
 
-        <!-- Right: ML Panel -->
-        <div class="lg:col-span-2 space-y-6">
-          <div class="glass-card rounded-2xl p-6 text-center">
-            <div class="text-xs text-white/30 uppercase tracking-wider font-mono mb-2">ML Confidence Score</div>
-            <div id="ml-score" class="text-5xl font-heading font-extrabold text-state-cyan">0.94</div>
-            <div id="ml-label" class="text-xs text-white/40 mt-2 font-mono">CLASSIFICATION: NORMAL</div>
-          </div>
-
-          <div class="glass-card rounded-2xl p-6">
-            <h3 class="text-xs text-white/40 uppercase tracking-wider font-mono mb-4">Threat Radar</h3>
-            <canvas id="radarChart" height="200"></canvas>
-          </div>
-
-          <div class="space-y-3">
-            <button onclick="forceRotateFirst()" class="w-full py-2.5 rounded-full bg-state-amber/20 border border-state-amber/30 text-state-amber text-xs font-bold hover:bg-state-amber/30 transition font-mono">
-              ⟳ FORCE ROTATE
-            </button>
-            <button onclick="isolateFirst()" class="w-full py-2.5 rounded-full bg-state-red/20 border border-state-red/30 text-state-red text-xs font-bold hover:bg-state-red/30 transition font-mono">
-              ⊘ ISOLATE NODE
-            </button>
-          </div>
+      <!-- Force controls -->
+      <div class="g-card" style="padding:22px 24px">
+        <div class="sec-label">Force Controls</div>
+        <p style="font-size:12px;color:var(--tm);line-height:1.6;margin-bottom:14px">Override the ML state machine. Use for demos or emergency response.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="force-btn fb-red" onclick="forceAttack()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Force Attack (S1→S3)
+          </button>
+          <button class="force-btn fb-green" onclick="forceStop()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Stop All Attacks
+          </button>
+          <button class="force-btn fb-cyan" onclick="forceReset()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Full System Reset
+          </button>
         </div>
       </div>
     </div>
-  </main>
+
+    <!-- 24h Timeline chart -->
+    <div class="g-card" style="padding:22px 24px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div class="sec-label" style="margin-bottom:0">24-Hour Access Timeline</div>
+        <span style="font-size:10px;color:var(--tm);font-family:'JetBrains Mono',monospace">Last updated: <span id="chart-ts">—</span></span>
+      </div>
+      <canvas id="timeline-chart" height="90"></canvas>
+    </div>
+
+    <!-- Anomaly log -->
+    <div class="g-card" style="padding:22px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="sec-label" style="margin-bottom:0">Anomaly Log</div>
+        <button onclick="loadAnomalyLog()" style="font-size:10px;color:var(--tm);padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:transparent;font-family:'JetBrains Mono',monospace;transition:color .2s">REFRESH</button>
+      </div>
+      <div class="log-filter-row">
+        <button class="lf-pill lf-all on" onclick="filterLog(this,'all')">ALL</button>
+        <button class="lf-pill lf-atk" onclick="filterLog(this,'attack')">ATTACK</button>
+        <button class="lf-pill lf-sus" onclick="filterLog(this,'suspicious')">SUSPICIOUS</button>
+        <button class="lf-pill lf-ok" onclick="filterLog(this,'normal')">NORMAL</button>
+      </div>
+      <div class="log-head">
+        <span>Time</span><span>Type</span><span>IP</span><span>File</span><span>Detail</span>
+      </div>
+      <div id="anomaly-log" style="max-height:280px;overflow-y:auto">
+        <div style="text-align:center;padding:24px;font-size:12px;color:var(--tm)">Loading...</div>
+      </div>
+    </div>
+
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// Timeline chart — will be populated from API
-const timeCtx = document.getElementById('timelineChart');
-let timelineChart = null;
-if (timeCtx) {
-  timelineChart = new Chart(timeCtx, {
-    type: 'line',
-    data: {
-      labels: Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}:00`),
-      datasets: [
-        { label: 'Normal', data: Array(24).fill(0), borderColor: '#00E5FF', backgroundColor: 'rgba(0,229,255,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
-        { label: 'Suspicious', data: Array(24).fill(0), borderColor: '#B829EA', backgroundColor: 'rgba(184,41,234,0.05)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
-        { label: 'Attack', data: Array(24).fill(0), borderColor: '#FF3366', backgroundColor: 'rgba(255,51,102,0.08)', fill: true, tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'JetBrains Mono', size: 9 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'JetBrains Mono', size: 9 } } }
-      },
-      plugins: { legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { family: 'JetBrains Mono', size: 10 } } } }
+let chart, allLogRows=[];
+
+/* ── Chart init ── */
+function initChart(){
+  chart=new Chart(document.getElementById('timeline-chart').getContext('2d'),{
+    type:'line',
+    data:{labels:[],datasets:[
+      {label:'Normal',data:[],borderColor:'#38BDF8',backgroundColor:'rgba(56,189,248,0.05)',tension:.4,fill:true,pointRadius:2,pointHoverRadius:4,borderWidth:1.5},
+      {label:'Suspicious',data:[],borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,0.04)',tension:.4,fill:true,pointRadius:2,pointHoverRadius:4,borderWidth:1.5},
+      {label:'Attack',data:[],borderColor:'#EF4444',backgroundColor:'rgba(239,68,68,0.04)',tension:.4,fill:true,pointRadius:2,pointHoverRadius:4,borderWidth:1.5},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:'#94A3B8',font:{size:11,family:"'JetBrains Mono',monospace"},boxWidth:10,padding:16}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#64748B',font:{size:9,family:"'JetBrains Mono',monospace"},maxTicksLimit:12},border:{display:false}},
+        y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#64748B',font:{size:9,family:"'JetBrains Mono',monospace"}},beginAtZero:true,border:{display:false}}
+      }
     }
   });
 }
 
-// Fetch real timeline data
-function updateTimeline() {
-  fetch('/admin/api/access-timeline').then(r => r.json()).then(data => {
-    if (timelineChart) {
-      timelineChart.data.labels = data.labels;
-      timelineChart.data.datasets[0].data = data.normal;
-      timelineChart.data.datasets[1].data = data.suspicious;
-      timelineChart.data.datasets[2].data = data.attack;
-      timelineChart.update();
-    }
-  }).catch(() => {});
-}
-updateTimeline();
-setInterval(updateTimeline, 10000);
-
-// Radar chart
-const radarCtx = document.getElementById('radarChart');
-let radarChart = null;
-if (radarCtx) {
-  radarChart = new Chart(radarCtx, {
-    type: 'radar',
-    data: {
-      labels: ['Auth Fails', 'IP Diversity', 'Rate', 'User Agent', 'Time Pattern'],
-      datasets: [{
-        data: [0, 0, 0, 0, 0],
-        borderColor: '#00E5FF',
-        backgroundColor: 'rgba(0,229,255,0.1)',
-        borderWidth: 1.5,
-        pointRadius: 3,
-        pointBackgroundColor: '#00E5FF',
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        r: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          angleLines: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { display: false },
-          pointLabels: { color: 'rgba(255,255,255,0.4)', font: { family: 'JetBrains Mono', size: 9 } }
-        }
-      },
-      plugins: { legend: { display: false } }
-    }
-  });
+function loadTimeline(){
+  fetch('/admin/api/access-timeline').then(r=>r.json()).then(d=>{
+    chart.data.labels=d.labels;
+    chart.data.datasets[0].data=d.normal;
+    chart.data.datasets[1].data=d.suspicious;
+    chart.data.datasets[2].data=d.attack;
+    chart.update('none');
+    document.getElementById('chart-ts').textContent=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  }).catch(()=>{});
 }
 
-// Anomaly log — fetched from real API
-let anomalies = [];
-let currentFilter = 'all';
-
-function loadAnomalies() {
-  fetch('/admin/api/anomaly-log').then(r => r.json()).then(data => {
-    anomalies = data;
-    renderAnomalies();
-  }).catch(() => {
-    document.getElementById('anomaly-table').innerHTML = '<div class="text-center text-white/20 text-xs font-body py-8">No access log data yet. Simulate an attack from the Dashboard to generate events.</div>';
-  });
+/* ── Score animation ── */
+function animateScore(){
+  const ring=document.getElementById('score-ring'),num=document.getElementById('score-num');
+  const target=97,dur=1800,s=performance.now();
+  const go=now=>{
+    const p=Math.min((now-s)/dur,1);
+    const cur=Math.round((1-Math.pow(1-p,3))*target);
+    ring.style.background=`conic-gradient(var(--cyan) 0% ${cur}%, rgba(255,255,255,0.05) ${cur}% 100%)`;
+    num.textContent=cur;
+    if(p<1)requestAnimationFrame(go);
+  };
+  requestAnimationFrame(go);
 }
 
-function renderAnomalies() {
-  const container = document.getElementById('anomaly-table');
-  const filtered = currentFilter === 'all' ? anomalies :
-    anomalies.filter(a => currentFilter === 'attack' ? a.severity === 'attack' : a.severity === 'suspicious');
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="text-center text-white/20 text-xs font-body py-8">No matching events. Simulate an attack from the Dashboard to generate data.</div>';
-    return;
-  }
-
-  container.innerHTML = filtered.map((a, i) => {
-    const borderColor = a.severity === 'attack' ? '#FF3366' : a.severity === 'suspicious' ? '#B829EA' : '#00E5FF';
-    const bgTint = i % 2 === 0 ? 'bg-white/[0.01]' : '';
-    return `<div class="border-l-2 rounded-r-lg px-4 py-2.5 ${bgTint} cursor-pointer hover:bg-white/[0.03] transition" style="border-color:${borderColor}" onclick="this.querySelector('.expand-detail')?.classList.toggle('hidden')">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-[10px] font-mono text-white/30">${a.time}</span>
-          <span class="badge ${a.severity === 'attack' ? 'badge-red' : a.severity === 'suspicious' ? 'badge-purple' : 'badge-cyan'}">${a.type}</span>
-          <span class="text-xs font-mono text-white/50">${a.file}</span>
+/* ── ML features ── */
+function loadFeatures(){
+  const fid=document.getElementById('feat-file-sel').value;
+  if(!fid)return;
+  fetch('/admin/api/status').then(r=>r.json()).then(data=>{
+    const c=data.ml_confidence;
+    const features=[
+      ['Normal Conf',c.normal,'var(--cyan)'],
+      ['Suspicious Conf',c.suspicious,'var(--amber)'],
+      ['Attack Conf',c.attack,'var(--red)'],
+      ['Keys Destroyed',Math.min(data.keys_destroyed_total/100,1),'var(--blue)',data.keys_destroyed_total],
+      ['Active Loops',Math.min(data.active_loops/10,1),'var(--green)',data.active_loops],
+    ];
+    document.getElementById('feat-display').innerHTML=features.map(([name,v,color,raw])=>`
+      <div class="feat-row">
+        <div class="feat-header">
+          <span class="feat-name">${name}</span>
+          <span class="feat-val" style="color:${color}">${raw!==undefined?raw:(v*100).toFixed(1)+'%'}</span>
         </div>
-        <span class="text-[10px] font-mono text-white/30">${a.ip}</span>
-      </div>
-      <div class="expand-detail hidden mt-2 text-[10px] font-mono text-white/40 pl-16">${a.detail}</div>
+        <div class="feat-track"><div class="feat-fill" style="background:${color};width:${v*100}%"></div></div>
+      </div>`).join('');
+  });
+}
+
+function loadFiles(){
+  fetch('/admin/files/data').then(r=>r.json()).then(files=>{
+    const sel=document.getElementById('feat-file-sel');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">Select file to inspect...</option>';
+    files.forEach(f=>{const o=document.createElement('option');o.value=f.id;o.textContent=`#${f.id} — ${f.original_name}`;sel.appendChild(o);});
+    if(cur)sel.value=cur;
+  });
+}
+
+/* ── Threat badge ── */
+function updateThreat(){
+  fetch('/admin/api/status').then(r=>r.json()).then(d=>{
+    const level=d.global_threat_level;
+    const badge=document.getElementById('threat-level');
+    badge.className=`chip chip-${level==='Attack'?'red':level==='Suspicious'?'amber':'cyan'}`;
+    badge.textContent=level.toUpperCase();
+  });
+}
+
+/* ── Anomaly log ── */
+function loadAnomalyLog(){
+  fetch('/admin/api/anomaly-log').then(r=>r.json()).then(rows=>{
+    allLogRows=rows;
+    renderLog('all');
+  }).catch(()=>{});
+}
+
+function renderLog(filter){
+  const el=document.getElementById('anomaly-log');
+  const filtered=filter==='all'?allLogRows:allLogRows.filter(r=>r.severity===filter);
+  if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:20px;font-size:12px;color:var(--tm)">No entries for this filter.</div>';return;}
+  el.innerHTML=filtered.map(r=>{
+    const tc=r.severity==='attack'?'log-type-atk':r.severity==='suspicious'?'log-type-sus':'log-type-ok';
+    return`<div class="log-row" data-sev="${r.severity}">
+      <span class="log-time">${r.time}</span>
+      <span class="${tc}">${r.type}</span>
+      <span class="log-ip">${r.ip}</span>
+      <span class="log-file">${r.file}</span>
+      <span class="log-detail">${r.detail}</span>
     </div>`;
   }).join('');
 }
 
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-pill').forEach(p => {
-    p.className = 'filter-pill px-4 py-1.5 rounded-full border border-white/[0.07] text-xs font-mono text-white/40';
-  });
-  btn.className = 'filter-pill active px-4 py-1.5 rounded-full border border-state-cyan/30 text-xs font-mono text-state-cyan bg-state-cyan/10';
-  renderAnomalies();
+function filterLog(btn,filter){
+  document.querySelectorAll('.lf-pill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderLog(filter);
 }
 
-function exportCSV() {
-  window.location.href = '/admin/api/logs/export';
-}
-
-function forceRotateFirst() {
-  fetch('/admin/files/data').then(r => r.json()).then(files => {
-    if (files.length > 0) fetch('/admin/rotate/' + files[0].id, { method: 'POST' });
+/* ── Force controls ── */
+function forceAttack(){
+  fetch('/admin/files/data').then(r=>r.json()).then(files=>{
+    if(!files.length){alert('No files exist yet.');return;}
+    const fid=files[0].id;
+    fetch('/admin/api/simulate/attack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:fid,intensity:'high'})})
+      .then(()=>setTimeout(loadAll,500));
   });
 }
 
-function isolateFirst() {
-  fetch('/admin/files/data').then(r => r.json()).then(files => {
-    if (files.length > 0) fetch('/admin/api/isolate/' + files[0].id, { method: 'POST' });
+function forceStop(){
+  fetch('/admin/files/data').then(r=>r.json()).then(files=>{
+    const atk=files.filter(f=>f.encryption_state==='CONT_ROTATION');
+    if(!atk.length){alert('No files are under attack.');return;}
+    Promise.all(atk.map(f=>fetch('/admin/api/simulate/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:f.id})}))).then(()=>setTimeout(loadAll,500));
   });
 }
 
-// Poll for ML data
-function updateML() {
-  fetch('/admin/api/status').then(r => r.json()).then(data => {
-    const conf = data.ml_confidence;
-    const maxKey = Object.entries(conf).sort((a,b) => b[1]-a[1])[0];
-    const score = maxKey[1];
-    const label = maxKey[0].toUpperCase();
-    const colors = { NORMAL: '#00E5FF', SUSPICIOUS: '#B829EA', ATTACK: '#FF3366' };
-    document.getElementById('ml-score').textContent = score.toFixed(2);
-    document.getElementById('ml-score').style.color = colors[label] || '#00E5FF';
-    document.getElementById('ml-label').textContent = 'CLASSIFICATION: ' + label;
-
-    if (radarChart) {
-      radarChart.data.datasets[0].data = [
-        conf.attack * 2, conf.suspicious, conf.attack, conf.suspicious * 0.8, conf.normal * 0.3
-      ];
-      radarChart.data.datasets[0].borderColor = colors[label] || '#00E5FF';
-      radarChart.data.datasets[0].backgroundColor = (colors[label] || '#00E5FF') + '1a';
-      radarChart.update();
-    }
-  }).catch(() => {});
+function forceReset(){
+  if(!confirm('Reset all files to AES-128 and clear all logs?'))return;
+  fetch('/admin/api/simulate/reset',{method:'POST'}).then(()=>setTimeout(loadAll,500));
 }
 
-loadAnomalies();
-updateML();
-setInterval(updateML, 5000);
-setInterval(loadAnomalies, 10000);
+function loadAll(){loadTimeline();loadAnomalyLog();loadFiles();updateThreat();}
+
+initChart();loadAll();animateScore();
+setInterval(loadAll,5000);
 </script>
 {% endblock %}
