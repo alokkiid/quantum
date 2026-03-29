@@ -1,314 +1,240 @@
 {% extends "base.html" %}
-
-{% block title %}Crypto Topology — Quantum-Aware Enterprise{% endblock %}
-
+{% block title %}Crypto Topology — QuantumShield Admin{% endblock %}
 {% block head %}
 <style>
-  .hex-node { cursor: pointer; transition: all 0.3s; }
-  .hex-node:hover { filter: brightness(1.3); }
-  .tooltip-card {
-    position: absolute; z-index: 100; pointer-events: none;
-    background: rgba(15,15,30,0.95); border: 1px solid rgba(255,255,255,0.1);
-    backdrop-filter: blur(20px); border-radius: 12px; padding: 12px 16px;
-    opacity: 0; transition: opacity 0.2s; min-width: 180px;
-  }
-  .tooltip-card.show { opacity: 1; }
+  .topo-wrap{display:grid;grid-template-columns:1fr 320px;gap:20px}
+  .node-map{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;min-height:500px;position:relative;overflow:hidden}
+  .entropy-stream{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);opacity:.6;line-height:1.4;word-break:break-all;max-height:80px;overflow:hidden;padding:12px;background:rgba(56,189,248,0.03);border:1px solid rgba(56,189,248,0.1);border-radius:8px;margin-bottom:16px}
+  .node-svg{width:100%;height:420px}
+  .node-circle{cursor:pointer;transition:all .2s}
+  .node-label{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--ts);pointer-events:none}
+  .node-state{font-family:'JetBrains Mono',monospace;font-size:8px;pointer-events:none}
+  .edge{stroke-dasharray:6 3;stroke-width:1.2}
+  .edge.active{animation:dashFlow .8s linear infinite}
+  @keyframes dashFlow{to{stroke-dashoffset:-9}}
+  .detail-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px}
+  .node-detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .node-detail-row:last-child{border-bottom:none}
+  .detail-lbl{color:var(--tm);font-family:'JetBrains Mono',monospace;font-size:11px}
+  .detail-val{color:var(--tp);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rot-counter{font-size:36px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--red);text-align:center;line-height:1}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ts);margin-bottom:8px}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="flex min-h-screen">
-  <!-- SIDEBAR -->
-  <aside class="fixed left-0 top-0 bottom-0 w-[240px] bg-surface border-r border-white/[0.07] flex flex-col z-40">
-    <div class="px-6 py-5 border-b border-white/[0.07]">
-      <a href="/" class="font-heading text-lg font-bold tracking-tighter">QUANTUM<span class="text-state-cyan">.</span>AWARE</a>
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <span class="logo-name">Quantum<span>Shield</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Navigation</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="nav-link"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="{{ url_for('admin.files_page') }}" class="nav-link"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>File Matrix</a>
+    <a href="{{ url_for('admin.threat_page') }}" class="nav-link"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Threat Intel</a>
+    <a href="{{ url_for('admin.topology_page') }}" class="nav-link active"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>Crypto Topology</a>
+    <div class="nav-sep"></div>
+    <a href="{{ url_for('admin.logs_export') }}" class="nav-link"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</a>
+    <a href="{{ url_for('logout') }}" class="nav-link"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</a>
+  </nav>
+  <div class="sidebar-foot"><div class="user-card"><div class="user-av">A</div><div><div class="user-name">Admin</div><div class="user-role">admin@qaware.com</div></div></div></div>
+</div>
+
+<div class="main-wrap">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:16px;font-weight:700">Crypto Topology</span>
+      <span class="chip chip-cyan" style="font-size:10px;padding:3px 10px" id="node-count">0 nodes</span>
     </div>
-    <nav class="flex-1 py-4 px-3 space-y-1">
-      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-        Dashboard
-      </a>
-      <a href="{{ url_for('admin.files_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-        File Matrix
-      </a>
-      <a href="{{ url_for('admin.threat_page') }}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body text-white/50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        Threat Intelligence
-      </a>
-      <a href="{{ url_for('admin.topology_page') }}" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-        Crypto Topology
-      </a>
-      <div class="border-t border-white/[0.07] my-4"></div>
-    </nav>
-    <div class="px-4 py-4 border-t border-white/[0.07] flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-      <div><div class="text-xs font-body text-white/80">Admin</div><div class="text-[10px] text-white/30 font-mono">admin@qaware.com</div></div>
-    </div>
-  </aside>
+    <button class="btn-ghost" style="padding:7px 14px;font-size:13px" onclick="loadTopology()">↺ Refresh</button>
+  </div>
 
-  <main class="ml-[240px] flex-1 min-h-screen">
-    <header class="sticky top-0 z-30 bg-black/60 backdrop-blur-xl border-b border-white/[0.07]">
-      <div class="flex items-center justify-between px-6 py-4">
-        <h1 class="font-heading text-lg font-bold">Crypto Topology</h1>
-        <div class="w-8 h-8 rounded-full bg-state-cyan/20 flex items-center justify-center text-state-cyan text-xs font-bold font-mono">A</div>
-      </div>
-    </header>
+  <div class="page-body">
+    <div class="topo-wrap">
+      <!-- Node map -->
+      <div>
+        <!-- Entropy stream -->
+        <div style="margin-bottom:16px">
+          <div class="card-label" style="margin-bottom:8px">Entropy Stream</div>
+          <div class="entropy-stream" id="entropy-stream">Initialising entropy monitor...</div>
+        </div>
 
-    <div class="p-6 relative" style="min-height: calc(100vh - 65px);">
+        <div class="node-map">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-label" style="margin-bottom:0">Vault Node Map</div>
+            <div style="display:flex;gap:16px">
+              <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>AES-128</div>
+              <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>AES-256</div>
+              <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>CONT_ROT</div>
+            </div>
+          </div>
+          <svg class="node-svg" id="node-svg" viewBox="0 0 700 400">
+            <!-- Center vault node -->
+            <circle cx="350" cy="200" r="30" fill="rgba(56,189,248,0.15)" stroke="#38BDF8" stroke-width="1.5"/>
+            <text x="350" y="195" text-anchor="middle" fill="#38BDF8" font-family="JetBrains Mono" font-size="9" font-weight="600">VAULT</text>
+            <text x="350" y="207" text-anchor="middle" fill="#64748B" font-family="JetBrains Mono" font-size="7">ENGINE</text>
+            <!-- Pulse rings -->
+            <circle cx="350" cy="200" r="38" fill="none" stroke="#38BDF8" stroke-width=".5" opacity=".3" style="animation:ringPulse 2s ease-out infinite"/>
+            <circle cx="350" cy="200" r="48" fill="none" stroke="#38BDF8" stroke-width=".3" opacity=".15" style="animation:ringPulse 2s ease-out infinite .6s"/>
+            <!-- File nodes rendered by JS -->
+            <g id="file-nodes"></g>
+          </svg>
+        </div>
 
-      <!-- Legend -->
-      <div class="absolute top-8 right-8 z-20 glass-card rounded-xl p-4">
-        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-3">Legend</div>
-        <div class="space-y-2 text-[10px] font-mono">
-          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#00E5FF; box-shadow:0 0 8px rgba(0,229,255,0.5)"></div><span class="text-white/60">Genesis Node</span></div>
-          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-cyan bg-transparent"></div><span class="text-white/60">Active</span></div>
-          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-purple bg-transparent"></div><span class="text-white/60">Suspicious</span></div>
-          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm border border-state-red bg-transparent"></div><span class="text-white/60">Compromised</span></div>
+        <!-- Rotation counter -->
+        <div class="card" style="margin-top:16px;text-align:center">
+          <div class="card-label" style="text-align:center">Total Rotations (All Files)</div>
+          <div class="rot-counter" id="total-rotations">0</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:6px">keys destroyed and regenerated</div>
         </div>
       </div>
 
-      <!-- Entropy stream -->
-      <div class="absolute top-8 right-8 mt-44 z-20 glass-card rounded-xl p-4 w-[200px]">
-        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-2">Entropy Stream</div>
-        <div id="entropy-stream" class="font-mono text-[10px] text-state-cyan/60 leading-relaxed break-all h-16 overflow-hidden"></div>
-      </div>
+      <!-- Detail panel -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="detail-card">
+          <div class="card-label">Selected Node</div>
+          <div id="node-detail">
+            <div style="text-align:center;padding:20px;color:var(--tm);font-size:13px">Click a node to inspect</div>
+          </div>
+        </div>
 
-      <!-- Node health table -->
-      <div class="absolute bottom-8 left-8 z-20 glass-card rounded-xl p-4 w-[280px]">
-        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-3">Node Health</div>
-        <table class="w-full text-[10px] font-mono">
-          <thead><tr class="text-white/30"><th class="text-left pb-2">NODE</th><th class="text-left pb-2">STATUS</th><th class="text-left pb-2">LOAD</th><th class="text-left pb-2">ALGO</th></tr></thead>
-          <tbody id="health-tbody">
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Rotation rate -->
-      <div class="absolute bottom-8 right-8 z-20 glass-card rounded-xl p-4 text-center">
-        <div class="text-[10px] font-mono text-white/40 uppercase tracking-wider mb-1">Rotation Rate</div>
-        <div id="rotation-rate" class="text-4xl font-heading font-extrabold text-state-cyan">0</div>
-        <div class="text-[9px] font-mono text-white/30">keys/min</div>
-      </div>
-
-      <!-- SVG Node Map -->
-      <svg id="topo-svg" viewBox="0 0 900 600" class="w-full h-full" style="min-height: 500px;">
-        <defs>
-          <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="6" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-
-        <!-- Edges (drawn first) -->
-        <g id="edges"></g>
-
-        <!-- Nodes -->
-        <g id="nodes"></g>
-      </svg>
-
-      <!-- Tooltip -->
-      <div id="node-tooltip" class="tooltip-card">
-        <div class="text-[10px] font-mono text-white/30 uppercase mb-1">Node Info</div>
-        <div id="tt-id" class="text-xs font-mono font-bold text-white mb-1"></div>
-        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
-          <span class="text-white/30">Load:</span><span id="tt-load" class="text-white/60"></span>
-          <span class="text-white/30">Algorithm:</span><span id="tt-algo" class="text-white/60"></span>
-          <span class="text-white/30">Last Rotation:</span><span id="tt-rotation" class="text-white/60"></span>
+        <div class="detail-card">
+          <div class="card-label">System Metrics</div>
+          <div class="node-detail-row"><span class="detail-lbl">Active Loops</span><span class="detail-val" id="sys-loops">—</span></div>
+          <div class="node-detail-row"><span class="detail-lbl">Keys Destroyed</span><span class="detail-val" id="sys-keys">—</span></div>
+          <div class="node-detail-row"><span class="detail-lbl">Global Threat</span><span class="detail-val" id="sys-threat">—</span></div>
+          <div class="node-detail-row"><span class="detail-lbl">Rotation Rate</span><span class="detail-val" id="sys-rate">—</span></div>
         </div>
       </div>
     </div>
-  </main>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function hexPoints(cx, cy, r) {
-  return Array.from({length: 6}, (_, i) => {
-    const angle = Math.PI / 6 + (i * Math.PI / 3);
-    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
-  }).join(' ');
-}
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3), 16);
-  const g = parseInt(hex.slice(3,5), 16);
-  const b = parseInt(hex.slice(5,7), 16);
-  return `${r},${g},${b}`;
-}
-
-function buildTopology(fileNodes) {
-  const edgeGroup = document.getElementById('edges');
-  const nodeGroup = document.getElementById('nodes');
-  edgeGroup.innerHTML = '';
-  nodeGroup.innerHTML = '';
-
-  // GENESIS node is always present
-  const genesis = { id: 'GENESIS', x: 450, y: 300, r: 32, status: 'genesis', algo: 'HUB', load: 0, lastRot: 'N/A' };
-
-  if (fileNodes.length === 0) {
-    // Empty state — just show GENESIS with a message
-    drawNode(genesis, nodeGroup);
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', 450); text.setAttribute('y', 380);
-    text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', 'rgba(255,255,255,0.2)');
-    text.setAttribute('font-family', 'JetBrains Mono'); text.setAttribute('font-size', '11');
-    text.textContent = 'Upload files to populate the topology';
-    nodeGroup.appendChild(text);
-    return;
-  }
-
-  // Position file nodes in a radial layout around GENESIS
-  const nodes = [genesis];
-  const angleStep = (2 * Math.PI) / fileNodes.length;
-  const radius = Math.min(200, 80 + fileNodes.length * 20);
-
-  fileNodes.forEach((f, i) => {
-    const angle = -Math.PI / 2 + i * angleStep;
-    nodes.push({
-      id: f.name.length > 12 ? f.name.substring(0, 10) + '..' : f.name,
-      fullName: f.name,
-      x: 450 + radius * Math.cos(angle),
-      y: 300 + radius * Math.sin(angle),
-      r: 24,
-      status: f.status,
-      algo: f.algo,
-      load: f.rotations,
-      lastRot: f.last_rotation ? f.last_rotation.substring(11, 19) || 'N/A' : 'N/A',
-      fileId: f.id,
-    });
-  });
-
-  // Draw edges from each file to GENESIS
-  nodes.slice(1).forEach(n => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', genesis.x); line.setAttribute('y1', genesis.y);
-    line.setAttribute('x2', n.x); line.setAttribute('y2', n.y);
-    line.setAttribute('stroke', 'rgba(0,229,255,0.15)');
-    line.setAttribute('stroke-width', '1');
-    line.setAttribute('stroke-dasharray', '4 4');
-    line.classList.add('animate-dash');
-    edgeGroup.appendChild(line);
-  });
-
-  // Draw all nodes
-  nodes.forEach(n => drawNode(n, nodeGroup));
-
-  // Update health table
-  updateHealthTable(nodes);
-}
-
-function drawNode(n, nodeGroup) {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  g.classList.add('hex-node');
-
-  const colors = {
-    genesis: '#00E5FF', active: '#00E5FF',
-    suspicious: '#B829EA', compromised: '#FF3366'
-  };
-  const color = colors[n.status] || '#00E5FF';
-  const fillOpacity = n.status === 'genesis' ? '0.15' : '0.05';
-  const filter = n.status === 'genesis' ? 'url(#glow-cyan)' : n.status === 'compromised' ? 'url(#glow-red)' : '';
-
-  // Compromised rings
-  if (n.status === 'compromised') {
-    const ring1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    ring1.setAttribute('cx', n.x); ring1.setAttribute('cy', n.y); ring1.setAttribute('r', n.r + 5);
-    ring1.setAttribute('fill', 'none'); ring1.setAttribute('stroke', '#FF3366'); ring1.setAttribute('stroke-width', '1'); ring1.setAttribute('opacity', '0.5');
-    ring1.classList.add('animate-ring');
-    g.appendChild(ring1);
-    const ring2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    ring2.setAttribute('cx', n.x); ring2.setAttribute('cy', n.y); ring2.setAttribute('r', n.r + 5);
-    ring2.setAttribute('fill', 'none'); ring2.setAttribute('stroke', '#FF3366'); ring2.setAttribute('stroke-width', '1'); ring2.setAttribute('opacity', '0.3');
-    ring2.classList.add('animate-ring-delay');
-    g.appendChild(ring2);
-  }
-
-  const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-  hex.setAttribute('points', hexPoints(n.x, n.y, n.r));
-  hex.setAttribute('fill', `rgba(${hexToRgb(color)},${fillOpacity})`);
-  hex.setAttribute('stroke', color);
-  hex.setAttribute('stroke-width', n.status === 'genesis' ? '2' : '1.5');
-  if (filter) hex.setAttribute('filter', filter);
-  g.appendChild(hex);
-
-  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  text.setAttribute('x', n.x); text.setAttribute('y', n.y + 3);
-  text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', color);
-  text.setAttribute('font-family', 'JetBrains Mono'); text.setAttribute('font-size', n.r > 28 ? '8' : '7');
-  text.setAttribute('opacity', '0.8');
-  text.textContent = n.id;
-  g.appendChild(text);
-
-  // Tooltip
-  g.addEventListener('mouseenter', (e) => {
-    const tooltip = document.getElementById('node-tooltip');
-    document.getElementById('tt-id').textContent = n.fullName || n.id;
-    document.getElementById('tt-load').textContent = (n.load || 0) + ' rotations';
-    document.getElementById('tt-algo').textContent = n.algo;
-    document.getElementById('tt-rotation').textContent = n.lastRot;
-    tooltip.style.left = (e.clientX + 15) + 'px';
-    tooltip.style.top = (e.clientY - 20) + 'px';
-    tooltip.classList.add('show');
-  });
-  g.addEventListener('mousemove', (e) => {
-    const tooltip = document.getElementById('node-tooltip');
-    tooltip.style.left = (e.clientX + 15) + 'px';
-    tooltip.style.top = (e.clientY - 20) + 'px';
-  });
-  g.addEventListener('mouseleave', () => {
-    document.getElementById('node-tooltip').classList.remove('show');
-  });
-
-  nodeGroup.appendChild(g);
-}
-
-function updateHealthTable(nodes) {
-  const tbody = document.getElementById('health-tbody');
-  tbody.innerHTML = '';
-  const statusColors = { genesis: 'text-state-cyan', active: 'text-state-green', suspicious: 'text-state-purple', compromised: 'text-state-red' };
-  nodes.forEach(n => {
-    const tr = document.createElement('tr');
-    tr.className = 'border-t border-white/[0.04]';
-    tr.innerHTML = `<td class="py-1.5 text-white/50">${n.fullName || n.id}</td><td class="${statusColors[n.status] || 'text-white/40'}">${n.status.toUpperCase()}</td><td class="text-white/40">${n.load || 0}</td><td class="text-white/40">${n.algo}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-// Fetch topology data from API
-function loadTopology() {
-  fetch('/admin/api/topology-data').then(r => r.json()).then(data => {
-    buildTopology(data.nodes || []);
-  }).catch(() => {
-    buildTopology([]);
-  });
-}
-
-loadTopology();
-setInterval(loadTopology, 10000);
+const HEX_CHARS = '0123456789ABCDEF';
+function randHex(n) { return Array.from({length:n}, () => HEX_CHARS[Math.floor(Math.random()*16)]).join(''); }
 
 // Entropy stream
 function updateEntropy() {
-  const el = document.getElementById('entropy-stream');
-  const chars = '0123456789abcdef';
-  let hex = '';
-  for (let i = 0; i < 64; i++) hex += chars[Math.floor(Math.random() * 16)];
-  el.textContent = hex;
+  document.getElementById('entropy-stream').textContent = Array.from({length:8}, () => randHex(32)).join(' ');
 }
-setInterval(updateEntropy, 800);
-updateEntropy();
+setInterval(updateEntropy, 1200);
 
-// Rotation rate from API
-function updateRate() {
-  fetch('/admin/api/status').then(r => r.json()).then(d => {
-    document.getElementById('rotation-rate').textContent = d.rotation_rate_per_minute || 0;
-  }).catch(() => {});
+const colors = { active:'#10B981', suspicious:'#F59E0B', compromised:'#EF4444' };
+const stateNames = { active:'AES-128', suspicious:'AES-256', compromised:'CONT_ROT' };
+
+let nodes = [];
+let selectedNode = null;
+
+function renderNodes(data) {
+  nodes = data.nodes;
+  const g = document.getElementById('file-nodes');
+  g.innerHTML = '';
+  const n = nodes.length;
+  if (!n) return;
+
+  // Position nodes in a circle around the vault
+  const cx = 350, cy = 200, r = 150;
+  let totalRot = 0;
+
+  nodes.forEach((node, i) => {
+    totalRot += node.rotations;
+    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    const color = colors[node.status] || '#38BDF8';
+    const isActive = node.status === 'compromised';
+
+    // Edge from vault to node
+    const edge = document.createElementNS('http://www.w3.org/2000/svg','line');
+    edge.setAttribute('x1', cx); edge.setAttribute('y1', cy);
+    edge.setAttribute('x2', x); edge.setAttribute('y2', y);
+    edge.setAttribute('stroke', color); edge.setAttribute('stroke-width', isActive ? '1.5' : '1');
+    edge.setAttribute('opacity', isActive ? '0.6' : '0.3');
+    edge.setAttribute('stroke-dasharray', '5 3');
+    if (isActive) edge.style.animation = 'dashFlow .8s linear infinite';
+    g.appendChild(edge);
+
+    // Node circle
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+    circle.setAttribute('r', 22);
+    circle.setAttribute('fill', `${color}18`);
+    circle.setAttribute('stroke', color); circle.setAttribute('stroke-width', isActive ? '2' : '1.2');
+    circle.setAttribute('class', 'node-circle');
+    circle.style.cursor = 'pointer';
+    circle.addEventListener('click', () => showNodeDetail(node, color));
+    if (isActive) circle.style.animation = 'pulseR .8s ease-in-out infinite';
+    g.appendChild(circle);
+
+    // Node label
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', x); label.setAttribute('y', y-3);
+    label.setAttribute('text-anchor','middle');
+    label.setAttribute('fill', color);
+    label.setAttribute('font-family','JetBrains Mono');
+    label.setAttribute('font-size','8');
+    label.setAttribute('font-weight','600');
+    label.textContent = `#${node.id}`;
+    g.appendChild(label);
+
+    const sublabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    sublabel.setAttribute('x', x); sublabel.setAttribute('y', y+8);
+    sublabel.setAttribute('text-anchor','middle');
+    sublabel.setAttribute('fill','#64748B');
+    sublabel.setAttribute('font-family','JetBrains Mono');
+    sublabel.setAttribute('font-size','7');
+    sublabel.textContent = stateNames[node.status] || node.algo;
+    g.appendChild(sublabel);
+  });
+
+  document.getElementById('total-rotations').textContent = totalRot;
+  document.getElementById('node-count').textContent = `${n} node${n!==1?'s':''}`;
 }
-updateRate();
-setInterval(updateRate, 5000);
+
+function showNodeDetail(node, color) {
+  const el = document.getElementById('node-detail');
+  const stateEl = `<span style="color:${color};font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">${stateNames[node.status] || node.algo}</span>`;
+  el.innerHTML = `
+    <div class="node-detail-row"><span class="detail-lbl">File ID</span><span class="detail-val">#${node.id}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">Name</span><span class="detail-val" title="${node.name}">${node.name}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">State</span><span class="detail-val">${stateEl}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">Key ID</span><span class="detail-val">K-${String(node.key_id||0).padStart(4,'0')}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">Rotations</span><span class="detail-val" style="color:var(--red)">${node.rotations}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">Size</span><span class="detail-val">${node.size ? (node.size/1024).toFixed(1)+'KB' : '—'}</span></div>
+    <div class="node-detail-row"><span class="detail-lbl">Last Key</span><span class="detail-val">${(node.last_rotation||'').slice(0,16)}</span></div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button onclick="rotateNode(${node.id})" style="padding:9px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);color:var(--cyan);font-family:'JetBrains Mono',monospace">↺ Rotate</button>
+      <button onclick="isolateNode(${node.id})" style="padding:9px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--red);font-family:'JetBrains Mono',monospace">🔴 Isolate</button>
+    </div>`;
+}
+
+function rotateNode(id) {
+  fetch(`/admin/rotate/${id}`, {method:'POST'}).then(() => loadTopology());
+}
+function isolateNode(id) {
+  fetch(`/admin/api/isolate/${id}`, {method:'POST'}).then(() => loadTopology());
+}
+
+function loadSysMetrics() {
+  fetch('/admin/api/status').then(r => r.json()).then(d => {
+    document.getElementById('sys-loops').textContent = d.active_loops;
+    document.getElementById('sys-keys').textContent = d.keys_destroyed_total;
+    document.getElementById('sys-threat').textContent = d.global_threat_level;
+    document.getElementById('sys-rate').textContent = d.rotation_rate_per_minute + '/min';
+  });
+}
+
+function loadTopology() {
+  fetch('/admin/api/topology-data').then(r => r.json()).then(renderNodes);
+  loadSysMetrics();
+}
+
+loadTopology();
+setInterval(loadTopology, 4000);
 </script>
 {% endblock %}
