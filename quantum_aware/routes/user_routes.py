@@ -13,10 +13,10 @@ import io
 import uuid
 from datetime import datetime
 from flask import (
-    Blueprint, request, jsonify, session,
+    Blueprint, request, jsonify,
     send_file, render_template, abort,
 )
-from auth import require_role
+from auth import require_role, get_current_user_id
 from database import get_db
 import crypto_engine
 import config
@@ -31,8 +31,12 @@ user_bp = Blueprint('user', __name__)
 @user_bp.route('/files')
 @require_role('user')
 def files():
-    """User file listing page."""
-    return render_template('user/files.html')
+    """User file listing page - no-cache so JS updates always load fresh."""
+    from flask import make_response
+    resp = make_response(render_template('user/files.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
 
 @user_bp.route('/upload')
@@ -49,8 +53,8 @@ def upload_page():
 @user_bp.route('/files/data')
 @require_role('user')
 def files_data():
-    """Return JSON list of the current user's files."""
-    user_id = session['user_id']
+    """Return JSON list of the current user's files (no-cache)."""
+    user_id = get_current_user_id()
     conn = get_db()
     try:
         rows = conn.execute(
@@ -62,7 +66,12 @@ def files_data():
         result = [dict(r) for r in rows]
     finally:
         conn.close()
-    return jsonify(result)
+    response = jsonify(result)
+    # Prevent browser from caching - always fetch fresh state
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +89,7 @@ def upload():
     if uploaded.filename == '':
         return jsonify({'success': False, 'error': 'Empty filename'}), 400
 
-    user_id = session['user_id']
+    user_id = get_current_user_id()
     now = datetime.utcnow().isoformat()
 
     # Read file bytes
@@ -167,7 +176,7 @@ def upload():
 @require_role('user')
 def download(file_id: int):
     """Decrypt a file in memory and return it as a download."""
-    user_id = session['user_id']
+    user_id = get_current_user_id()
     now = datetime.utcnow().isoformat()
 
     conn = get_db()
@@ -237,7 +246,7 @@ def download(file_id: int):
 @require_role('user')
 def delete(file_id: int):
     """Delete a file: DESTROY all keys, remove from vault, delete DB row."""
-    user_id = session['user_id']
+    user_id = get_current_user_id()
     now = datetime.utcnow().isoformat()
 
     conn = get_db()
