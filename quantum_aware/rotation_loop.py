@@ -132,7 +132,7 @@ def _loop_worker(file_id: int, stop_signal: threading.Event) -> None:
                 conn.close()
 
             # Re-evaluate ML
-            threat = ml_engine.get_current_threat_state(file_id, ip=None)
+            threat = ml_engine.get_current_threat_state(file_id)
             if threat['state'] != 'Attack':
                 print(f"[rotation_loop] file={file_id} attack ceased "
                       f"(ML={threat['state']}), stopping loop")
