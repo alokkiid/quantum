@@ -13,7 +13,7 @@ The three tiers operate as a state machine: **State 1 (Normal / AES-128)** is th
 ```bash
 cd quantum_aware
 pip install flask cryptography scikit-learn numpy werkzeug apscheduler
-python app.py
+.\venv\Scripts\python.exe quantum_aware\app.py (if python 14 is installed in laptop then download python 11 in virtual environment)
 ```
 
 The server starts at **http://127.0.0.1:5000**
