@@ -10,7 +10,7 @@ from collections import defaultdict, deque
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from flask import Flask, redirect, url_for, render_template, request, flash
+from flask import Flask, redirect, url_for, render_template, request, flash, make_response
 
 import config
 import database
@@ -25,11 +25,6 @@ from routes.user_routes import user_bp
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
-
-
-# ---------------------------------------------------------------------------
-# Real-time traffic tracking (Fix 2 + Fix 3)
-# ---------------------------------------------------------------------------
 
 _req_lock = threading.Lock()
 _global_timestamps: deque = deque()
@@ -84,7 +79,6 @@ def get_request_metrics(ip: str = None) -> dict:
         'ip_auth_failures': ip_fails,
     }
 
-
 # ---------------------------------------------------------------------------
 # Initialise database & seed accounts
 # ---------------------------------------------------------------------------
@@ -124,14 +118,12 @@ with app.app_context():
     finally:
         conn.close()
 
-
 # ---------------------------------------------------------------------------
 # Blueprint registration
 # ---------------------------------------------------------------------------
 
 app.register_blueprint(admin_bp, url_prefix='/admin')
 app.register_blueprint(user_bp,  url_prefix='/user')
-
 
 # ---------------------------------------------------------------------------
 # Core routes
@@ -190,14 +182,27 @@ def login():
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        success = auth.login_user(email, password)
+        user = auth.validate_credentials(email, password)
 
-        if success:
-            role = auth.get_current_user()['role']
+        if user:
+            role    = user['role']
+            user_id = user['id']
+            token   = auth.create_auth_token(user_id, role)
+            cfg     = auth.COOKIE_MAP[role]
+
             if role == 'admin':
-                return redirect(url_for('admin.dashboard'))
+                resp = make_response(redirect(url_for('admin.dashboard')))
             else:
-                return redirect(url_for('user.files'))
+                resp = make_response(redirect(url_for('user.files')))
+
+            resp.set_cookie(
+                cfg['name'], token,
+                path      = cfg['path'],
+                httponly  = True,
+                samesite  = 'Lax',
+                max_age   = 8 * 3600,
+            )
+            return resp
         else:
             record_auth_failure(request.remote_addr or '0.0.0.0')
             flash('Invalid email or password.', 'error')
@@ -208,10 +213,12 @@ def login():
 
 @app.route('/logout')
 def logout():
-    auth.logout_user()
+    resp = make_response(redirect(url_for('login')))
+    # Clear both role cookies (whichever exists)
+    resp.delete_cookie('user_auth',  path='/user')
+    resp.delete_cookie('admin_auth', path='/admin')
     flash('You have been logged out.', 'info')
-    return redirect(url_for('login'))
-
+    return resp
 
 # ---------------------------------------------------------------------------
 # Error handlers
@@ -219,8 +226,8 @@ def logout():
 
 @app.errorhandler(403)
 def forbidden(e):
+    flash('Your session has expired or you do not have access. Please log in again.', 'error')
     return redirect(url_for('login'))
-
 
 # ---------------------------------------------------------------------------
 # Background monitor
@@ -249,7 +256,6 @@ def _background_monitor():
 
         time.sleep(10)
 
-
 _monitor_started = False
 
 def _start_monitor_once():
@@ -262,7 +268,6 @@ def _start_monitor_once():
 
 with app.app_context():
     _start_monitor_once()
-
 
 # ---------------------------------------------------------------------------
 # Entry point
