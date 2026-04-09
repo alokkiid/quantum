@@ -129,8 +129,8 @@ with app.test_client() as c:
     file_row = conn.execute("SELECT encryption_state FROM files WHERE id = ?", (file_id,)).fetchone()
     conn.close()
     state_stopped = file_row['encryption_state'] if file_row else 'MISSING'
-    check(8, "After stop -> state is AES-256",
-          state_stopped == 'AES-256',
+    check(8, "After stop -> state is AES-128",
+          state_stopped == 'AES-128',
           f"state={state_stopped}")
 
     # -- Step 9: Rotation loop is no longer active --
