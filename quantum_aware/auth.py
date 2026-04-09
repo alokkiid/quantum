@@ -1,48 +1,79 @@
 """
 auth.py — Authentication helpers for Quantum-Aware Enterprise.
 
-Public API:
-  hash_password(password)           → hashed string
-  verify_password(password, hash)   → bool
-  login_user(email, password)       → True | False  (also sets session)
-  logout_user()                     → None
-  require_role(role)                → decorator (403 if wrong role)
-  get_current_user()                → sqlite3.Row | None
+Uses path-scoped signed cookies instead of Flask session so that admin and
+user sessions are completely independent even in the same browser.
+
+  user_auth  cookie  Path=/user   → only sent to /user/* requests
+  admin_auth cookie  Path=/admin  → only sent to /admin/* requests
 """
 
 import functools
-from flask import session, abort, request
+from datetime import timedelta
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from flask import request, abort, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
 
-
-# ---------------------------------------------------------------------------
-# Password utilities
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Password helpers
+# -----------------------------------------------------------------------
 
 def hash_password(password: str) -> str:
-    """Return a Werkzeug-generated password hash (pbkdf2:sha256)."""
     return generate_password_hash(password)
 
-
 def verify_password(password: str, password_hash: str) -> bool:
-    """Return True if *password* matches *password_hash*."""
     return check_password_hash(password_hash, password)
 
+# -----------------------------------------------------------------------
+# Signed token helpers  (uses the app secret key)
+# Max age: 8 hours
+# -----------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Session management
-# ---------------------------------------------------------------------------
+_MAX_AGE = 8 * 3600   # seconds
 
-def login_user(email: str, password: str) -> bool:
+def _serializer():
+    from flask import current_app
+    return URLSafeTimedSerializer(current_app.secret_key, salt='qaware-auth')
+
+def create_auth_token(user_id: int, role: str) -> str:
+    """Return a signed token encoding user_id + role."""
+    return _serializer().dumps({'user_id': user_id, 'role': role})
+
+def decode_auth_token(token: str) -> dict | None:
+    """Return the payload dict or None if invalid/expired."""
+    try:
+        return _serializer().loads(token, max_age=_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+
+# -----------------------------------------------------------------------
+# Cookie names & paths
+# -----------------------------------------------------------------------
+
+COOKIE_MAP = {
+    'admin': {'name': 'admin_auth', 'path': '/admin'},
+    'user':  {'name': 'user_auth',  'path': '/user'},
+}
+
+def _read_role_token(role: str) -> dict | None:
+    """Read and validate the role-specific cookie from the current request."""
+    cfg = COOKIE_MAP.get(role)
+    if not cfg:
+        return None
+    raw = request.cookies.get(cfg['name'])
+    if not raw:
+        return None
+    return decode_auth_token(raw)
+
+# -----------------------------------------------------------------------
+# Login / logout helpers
+# -----------------------------------------------------------------------
+
+def validate_credentials(email: str, password: str):
     """
-    Validate credentials and populate the Flask session.
-
-    Sets:
-      session['user_id']  → int
-      session['role']     → 'admin' | 'user'
-
-    Returns True on success, False on bad credentials.
+    Check email/password against DB.
+    Returns sqlite3.Row on success, None on failure.
     """
     conn = get_db()
     try:
@@ -54,62 +85,63 @@ def login_user(email: str, password: str) -> bool:
         conn.close()
 
     if user is None or not verify_password(password, user['password_hash']):
-        return False
+        return None
+    return user
 
-    session.clear()
-    session['user_id'] = user['id']
-    session['role'] = user['role']
-    return True
+# Keep old name for backward compat with app.py call site
+def login_user(email: str, password: str) -> bool:
+    """Kept for compatibility – call validate_credentials instead."""
+    return validate_credentials(email, password) is not None
 
+def logout_user():
+    """No-op – cookies cleared in the logout route response."""
+    pass
 
-def logout_user() -> None:
-    """Clear the current Flask session (logs the user out)."""
-    session.clear()
-
-
-# ---------------------------------------------------------------------------
-# Current user helper
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# get_current_user
+# -----------------------------------------------------------------------
 
 def get_current_user():
     """
-    Return the full user row from DB for the session user, or None if
-    the session is unauthenticated.
+    Return the DB row for the currently authenticated user by reading
+    whichever role cookie is present in this request.
     """
-    user_id = session.get('user_id')
-    if user_id is None:
-        return None
+    for role in ('user', 'admin'):
+        payload = _read_role_token(role)
+        if payload:
+            conn = get_db()
+            try:
+                return conn.execute(
+                    "SELECT id, email, role, created_at FROM users WHERE id = ?",
+                    (payload['user_id'],)
+                ).fetchone()
+            finally:
+                conn.close()
+    return None
 
-    conn = get_db()
-    try:
-        user = conn.execute(
-            "SELECT id, email, role, created_at FROM users WHERE id = ?",
-            (user_id,)
-        ).fetchone()
-    finally:
-        conn.close()
+def get_current_user_id() -> int | None:
+    """Return just the user_id from the current request's auth cookie."""
+    for role in ('user', 'admin'):
+        payload = _read_role_token(role)
+        if payload:
+            return payload['user_id']
+    return None
 
-    return user
-
-
-# ---------------------------------------------------------------------------
-# Role guard decorator
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# require_role decorator
+# -----------------------------------------------------------------------
 
 def require_role(role: str):
     """
-    Decorator factory.  Wrap any route with @require_role('admin') or
-    @require_role('user') to enforce access control.
-
-    Returns HTTP 403 Forbidden if:
-      - User is not logged in, OR
-      - User's role does not match *role*
+    Decorator: abort(403) if the role-specific signed cookie is missing
+    or invalid. Because cookies are path-scoped, admin and user sessions
+    never collide even in the same browser.
     """
     def decorator(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            current_role = session.get('role')
-            if current_role is None or current_role != role:
+            payload = _read_role_token(role)
+            if payload is None or payload.get('role') != role:
                 abort(403)
             return f(*args, **kwargs)
         return wrapper
