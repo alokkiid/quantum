@@ -103,11 +103,6 @@
         <p>Sign in to your vault to manage encrypted files.</p>
       </div>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for cat, msg in messages %}
-          <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#FCA5A5;margin-bottom:16px">{{ msg }}</div>
-        {% endfor %}
-      {% endwith %}
 
       <div class="role-pills">
         <button class="role-pill on" data-role="user" onclick="setRole('user')">User</button>
