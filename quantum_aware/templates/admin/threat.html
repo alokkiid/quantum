@@ -248,21 +248,37 @@ function loadTimeline(){
   }).catch(()=>{});
 }
 
-/* ── Score animation ── */
-function animateScore(){
-  const ring=document.getElementById('score-ring'),num=document.getElementById('score-num');
-  const target=97,dur=1800,s=performance.now();
-  const go=now=>{
-    const p=Math.min((now-s)/dur,1);
-    const cur=Math.round((1-Math.pow(1-p,3))*target);
-    ring.style.background=`conic-gradient(var(--cyan) 0% ${cur}%, rgba(255,255,255,0.05) ${cur}% 100%)`;
-    num.textContent=cur;
-    if(p<1)requestAnimationFrame(go);
-  };
-  requestAnimationFrame(go);
+/* ── Security score (dynamic from API) ── */
+function loadSecurityScore(){
+  fetch('/admin/api/security-score').then(r=>r.json()).then(d=>{
+    const ring=document.getElementById('score-ring');
+    const num=document.getElementById('score-num');
+    const lbl=document.getElementById('score-label');
+    const target=d.score;
+    const colorMap={cyan:'var(--cyan)',green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
+    const c=colorMap[d.color]||'var(--cyan)';
+    // Animate ring to new value
+    const cur=parseInt(num.textContent)||0;
+    const dur=900,s=performance.now();
+    const go=now=>{
+      const p=Math.min((now-s)/dur,1);
+      const v=Math.round(cur+(target-cur)*(1-Math.pow(1-p,3)));
+      ring.style.background=`conic-gradient(${c} 0% ${v}%, rgba(255,255,255,0.05) ${v}% 100%)`;
+      num.textContent=v;
+      num.style.color=c;
+      if(p<1)requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+    lbl.textContent=d.label;
+    lbl.style.color=c;
+  }).catch(()=>{});
 }
 
-/* ── ML features ── */
+function loadAll(){loadTimeline();loadAnomalyLog();loadFiles();updateThreat();loadSecurityScore();}
+
+initChart();loadAll();
+setInterval(loadAll,5000);
+
 function loadFeatures(){
   const fid=document.getElementById('feat-file-sel').value;
   if(!fid)return;
@@ -388,10 +404,5 @@ function forceReset(){
   if(!confirm('Reset all files to AES-128 and clear all logs?'))return;
   fetch('/admin/api/simulate/reset',{method:'POST'}).then(()=>setTimeout(loadAll,500));
 }
-
-function loadAll(){loadTimeline();loadAnomalyLog();loadFiles();updateThreat();}
-
-initChart();loadAll();animateScore();
-setInterval(loadAll,5000);
 </script>
 {% endblock %}
