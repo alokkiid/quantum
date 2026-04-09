@@ -134,25 +134,25 @@ def api_status():
         else:
             global_level = 'Normal'
 
-        # Files under active attack
+        # Files under active threat (CONT_ROTATION = active attack, AES-256 = elevated)
         files_under_attack = [f['id'] for f in files
-                              if f['encryption_state'] == 'CONT_ROTATION']
+                              if f['encryption_state'] in ('CONT_ROTATION', 'AES-256')]
 
-        # Aggregate ML confidence (average across all files, or default)
+        # ML confidence: use the most threatened file's confidence (not average)
+        # This reflects the actual threat level being displayed, not a diluted average
         if files:
-            all_confs = []
+            all_threats = []
             for f in files:
                 try:
                     threat = ml_engine.get_current_threat_state(f['id'])
-                    all_confs.append(threat['confidence'])
+                    all_threats.append(threat)
                 except Exception:
-                    all_confs.append({'normal': 0.94, 'suspicious': 0.05, 'attack': 0.01})
+                    all_threats.append({'state': 'Normal', 'confidence': {'normal': 0.94, 'suspicious': 0.05, 'attack': 0.01}})
 
-            avg_conf = {
-                'normal': sum(c['normal'] for c in all_confs) / len(all_confs),
-                'suspicious': sum(c['suspicious'] for c in all_confs) / len(all_confs),
-                'attack': sum(c['attack'] for c in all_confs) / len(all_confs),
-            }
+            # Priority: Attack > Suspicious > Normal — show the worst file's confidence
+            priority = {'Attack': 2, 'Suspicious': 1, 'Normal': 0}
+            worst = max(all_threats, key=lambda t: priority.get(t['state'], 0))
+            avg_conf = worst['confidence']
         else:
             avg_conf = {'normal': 1.0, 'suspicious': 0.0, 'attack': 0.0}
 
@@ -219,12 +219,14 @@ def simulate_attack():
         if file_row is None:
             return jsonify({'success': False, 'error': f'File {file_id} not found'}), 404
 
+        # Insert all logs at current timestamp so they stay in the 60s ML window
+        # for a full 60 seconds before expiring
         for i in range(count):
             conn.execute(
                 "INSERT INTO access_logs "
                 "(file_id, user_id, source_ip, event_type, user_agent, timestamp) "
                 "VALUES (?, NULL, ?, 'AUTH_FAIL', ?, ?)",
-                (file_id, f"192.168.1.{(i % 254) + 1}",
+                (file_id, f"192.168.{(i % 8) + 1}.{(i % 254) + 1}",
                  f"attacker-bot/{i}", now)
             )
         conn.commit()
@@ -260,17 +262,41 @@ def simulate_attack():
 @admin_bp.route('/api/simulate/stop', methods=['POST'])
 @require_role('admin')
 def simulate_stop():
-    """Stop an ongoing attack simulation."""
+    """
+    Stop attack simulation. Clears injected AUTH_FAIL logs so ML sees Normal,
+    then reverts state: CONT_ROTATION -> AES-256 -> AES-128.
+    """
     data = request.get_json(force=True)
     file_id = data.get('file_id')
 
     if file_id is None:
         return jsonify({'success': False, 'error': 'file_id required'}), 400
 
-    rotation_loop.stop_loop(file_id)
-    state_engine.transition_attack_to_suspicious(file_id)
+    current_state = state_engine.get_file_state(file_id)
 
-    return jsonify({'success': True})
+    # Step 1: Clear injected attack logs so ML re-check passes
+    conn = get_db()
+    try:
+        conn.execute(
+            "DELETE FROM access_logs WHERE file_id = ? AND event_type = 'AUTH_FAIL'",
+            (file_id,)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Step 2: Stop rotation loop if running
+    rotation_loop.stop_loop(file_id)
+
+    # Step 3: Revert state fully to AES-128
+    if current_state == 'CONT_ROTATION':
+        state_engine.transition_attack_to_suspicious(file_id)
+        state_engine.transition_suspicious_to_normal(file_id)
+    elif current_state == 'AES-256':
+        state_engine.transition_suspicious_to_normal(file_id)
+
+    final_state = state_engine.get_file_state(file_id)
+    return jsonify({'success': True, 'state': final_state})
 
 
 # ---------------------------------------------------------------------------
