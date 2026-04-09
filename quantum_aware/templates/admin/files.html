@@ -3,6 +3,15 @@
 
 {% block head %}
 <style>
+
+/* Force dark select dropdown options — overrides browser default */
+select, select option {
+  background-color: #0C1220 !important;
+  color: #F1F5F9 !important;
+}
+select option:hover, select option:focus, select option:checked {
+  background-color: #1a2440 !important;
+}
 .sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--ts);transition:all .2s;text-decoration:none;border:1px solid transparent;margin-bottom:2px}
 .sidebar-link svg{width:15px;height:15px;flex-shrink:0}
 .sidebar-link:hover{background:rgba(255,255,255,0.04);color:var(--tp)}
@@ -30,7 +39,7 @@
 .search-wrap input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:8px 12px 8px 33px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;font-family:inherit}
 .search-wrap input::placeholder{color:var(--tm)}
 .search-wrap input:focus{border-color:rgba(56,189,248,0.4)}
-.f-select{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--ts);outline:none;cursor:pointer;transition:border-color .2s;font-family:'JetBrains Mono',monospace}
+.f-select{background:#0C1220;border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--ts);outline:none;cursor:pointer;transition:border-color .2s;font-family:'JetBrains Mono',monospace;-webkit-appearance:none;appearance:none}
 .f-select:focus{border-color:rgba(56,189,248,0.4)}
 .f-pill{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:11px;font-weight:600;color:var(--tm);cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace}
 .f-pill:hover{border-color:var(--border2);color:var(--ts)}
