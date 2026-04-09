@@ -3,6 +3,15 @@
 
 {% block head %}
 <style>
+
+/* Force dark select dropdown options — overrides browser default */
+select, select option {
+  background-color: #0C1220 !important;
+  color: #F1F5F9 !important;
+}
+select option:hover, select option:focus, select option:checked {
+  background-color: #1a2440 !important;
+}
 /* ── Sidebar nav shared ── */
 .sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--ts);transition:all .2s;text-decoration:none;border:1px solid transparent;margin-bottom:2px}
 .sidebar-link svg{width:15px;height:15px;flex-shrink:0;transition:color .2s}
@@ -80,7 +89,7 @@
 .speed-pill.active{background:rgba(56,189,248,0.08);border-color:rgba(56,189,248,0.28);color:var(--cyan)}
 
 /* ── File select ── */
-.file-sel{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.file-sel{width:100%;background:#0C1220;border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;cursor:pointer;font-family:'JetBrains Mono',monospace;-webkit-appearance:none;appearance:none}
 .file-sel:focus{border-color:rgba(56,189,248,0.4)}
 
 /* ── Alert feed ── */
@@ -148,11 +157,55 @@
     </a>
   </nav>
   <div class="sidebar-foot">
-    <div class="user-card">
-      <div class="user-av">A</div>
-      <div><div class="user-name">Admin</div><div class="user-role">admin@qaware.com</div></div>
+    <div class="user-card" onclick="toggleAdminPanel()" style="cursor:pointer" title="Account & Settings">
+      <div class="user-av" id="admin-av-btn">A</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name" id="admin-name-btn">Admin</div>
+        <div class="user-role">admin@qaware.com</div>
+      </div>
+      <svg width="13" height="13" fill="none" stroke="var(--tm)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
     </div>
   </div>
+
+  <!-- Admin profile panel (slides up from bottom of sidebar) -->
+  <div id="admin-panel" style="position:fixed;bottom:0;left:0;width:236px;background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:0;z-index:200;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:0 -24px 48px rgba(0,0,0,0.5)">
+    <!-- Drag handle -->
+    <div style="padding:12px;text-align:center;cursor:pointer;border-bottom:1px solid var(--border)" onclick="toggleAdminPanel()">
+      <div style="width:28px;height:3px;background:var(--border2);border-radius:999px;margin:0 auto 10px"></div>
+      <div style="font-size:10px;color:var(--tm);font-family:'JetBrains Mono',monospace;letter-spacing:.06em">ACCOUNT</div>
+    </div>
+    <!-- Avatar -->
+    <div style="padding:16px;border-bottom:1px solid var(--border);text-align:center">
+      <div id="admin-panel-av" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#38BDF8,#818CF8);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;margin:0 auto 10px">A</div>
+      <div id="admin-panel-name" style="font-size:14px;font-weight:700;color:var(--tp)">Admin</div>
+      <div style="font-size:10px;color:var(--tm);font-family:'JetBrains Mono',monospace;margin-top:3px">admin@qaware.com</div>
+      <div style="margin-top:8px"><span class="chip chip-amber" style="font-size:10px;padding:2px 10px">Administrator</span></div>
+    </div>
+    <!-- Edit display name -->
+    <div style="padding:14px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:8px">Display Name</div>
+      <div style="display:flex;gap:6px">
+        <input id="admin-name-input" type="text" value="Admin" placeholder="Your name..." style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--tp);outline:none;transition:border-color .2s;font-family:inherit" onfocus="this.style.borderColor='rgba(56,189,248,0.4)'" onblur="this.style.borderColor='var(--border)'"/>
+        <button id="admin-save-btn" onclick="saveAdminName()" style="padding:7px 14px;border-radius:8px;background:linear-gradient(135deg,#38BDF8,#818CF8);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;flex-shrink:0">Save</button>
+      </div>
+    </div>
+    <!-- Quick links -->
+    <div style="padding:8px 8px">
+      <a href="{{ url_for('admin.dashboard') }}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:12px;color:var(--ts);text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.logs_export') }}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:12px;color:var(--ts);text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Audit Log
+      </a>
+      <a href="{{ url_for('logout') }}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:12px;color:var(--red);text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(239,68,68,0.06)'" onmouseout="this.style.background='transparent'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </a>
+    </div>
+  </div>
+  <div id="admin-panel-backdrop" onclick="toggleAdminPanel()" style="display:none;position:fixed;inset:0;z-index:199"></div>
 </aside>
 
 <!-- Main -->
@@ -413,9 +466,10 @@ function updateDashboard(data){
   setBar('bar-a','pct-a',conf.attack,'var(--red)');
 
   /* threat ring */
-  const topConf=Math.max(conf.normal,conf.suspicious,conf.attack);
+  // Ring shows confidence for the CURRENT threat level (not max)
   const ringColor=level==='Attack'?'var(--red)':level==='Suspicious'?'var(--amber)':'var(--cyan)';
-  const pct=Math.round(topConf*100);
+  const levelConf = level==='Attack' ? conf.attack : level==='Suspicious' ? conf.suspicious : conf.normal;
+  const pct=Math.round(levelConf*100);
   document.getElementById('threat-ring').style.background=`conic-gradient(${ringColor} 0% ${pct}%, rgba(255,255,255,0.05) ${pct}% 100%)`;
   document.getElementById('ring-pct').textContent=pct+'%';
   document.getElementById('ring-pct').style.color=ringColor;
@@ -501,5 +555,62 @@ function poll(){
 poll();loadFiles();
 setInterval(poll,3000);
 setInterval(loadFiles,10000);
+
+/* ── Admin profile panel ── */
+let adminPanelOpen = false;
+
+function toggleAdminPanel() {
+  adminPanelOpen ? closeAdminPanel() : openAdminPanel();
+}
+
+function openAdminPanel() {
+  adminPanelOpen = true;
+  const panel = document.getElementById('admin-panel');
+  const chevron = document.querySelector('.user-card svg');
+  panel.style.transform = 'translateY(0)';
+  document.getElementById('admin-panel-backdrop').style.display = 'block';
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
+}
+
+function closeAdminPanel() {
+  adminPanelOpen = false;
+  const panel = document.getElementById('admin-panel');
+  const chevron = document.querySelector('.user-card svg');
+  panel.style.transform = 'translateY(100%)';
+  document.getElementById('admin-panel-backdrop').style.display = 'none';
+  if (chevron) chevron.style.transform = '';
+}
+
+function saveAdminName() {
+  const name = document.getElementById('admin-name-input').value.trim();
+  if (!name) return;
+  document.getElementById('admin-panel-name').textContent = name;
+  document.getElementById('admin-name-btn').textContent = name;
+  document.getElementById('admin-panel-av').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('admin-av-btn').textContent = name.charAt(0).toUpperCase();
+  localStorage.setItem('qs_admin_name', name);
+  const btn = document.getElementById('admin-save-btn');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Saved';
+    btn.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = 'linear-gradient(135deg,#38BDF8,#818CF8)';
+    }, 1500);
+  }
+}
+
+// Restore saved name
+(function() {
+  const saved = localStorage.getItem('qs_admin_name');
+  if (saved) {
+    document.getElementById('admin-panel-name').textContent = saved;
+    document.getElementById('admin-name-btn').textContent = saved;
+    document.getElementById('admin-name-input').value = saved;
+    document.getElementById('admin-panel-av').textContent = saved.charAt(0).toUpperCase();
+    document.getElementById('admin-av-btn').textContent = saved.charAt(0).toUpperCase();
+  }
+})();
 </script>
 {% endblock %}
