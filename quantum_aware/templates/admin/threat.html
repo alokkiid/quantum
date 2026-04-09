@@ -3,6 +3,15 @@
 
 {% block head %}
 <style>
+
+/* Force dark select dropdown options — overrides browser default */
+select, select option {
+  background-color: #0C1220 !important;
+  color: #F1F5F9 !important;
+}
+select option:hover, select option:focus, select option:checked {
+  background-color: #1a2440 !important;
+}
 .sidebar-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--ts);transition:all .2s;text-decoration:none;border:1px solid transparent;margin-bottom:2px}
 .sidebar-link svg{width:15px;height:15px;flex-shrink:0}
 .sidebar-link:hover{background:rgba(255,255,255,0.04);color:var(--tp)}
@@ -257,23 +266,53 @@ function animateScore(){
 function loadFeatures(){
   const fid=document.getElementById('feat-file-sel').value;
   if(!fid)return;
-  fetch('/admin/api/status').then(r=>r.json()).then(data=>{
-    const c=data.ml_confidence;
+  // Fetch both status (for global metrics) and file-specific data
+  Promise.all([
+    fetch('/admin/api/status').then(r=>r.json()),
+    fetch('/admin/files/data').then(r=>r.json())
+  ]).then(([status, files])=>{
+    const file = files.find(f=>String(f.id)===String(fid));
+    const fileState = file ? file.encryption_state : 'AES-128';
+    
+    // Determine per-file threat level from its encryption state
+    const fileThreat = fileState==='CONT_ROTATION' ? 'Attack' : fileState==='AES-256' ? 'Suspicious' : 'Normal';
+    
+    // Use global confidence but note file-specific state
+    const c = status.ml_confidence;
+    // Show file-specific confidence based on its state
+    const fileConf = fileThreat==='Attack' ? c.attack : fileThreat==='Suspicious' ? c.suspicious : c.normal;
+    
+    const isUnderThreat = status.files_under_attack.includes(parseInt(fid));
+    
     const features=[
-      ['Normal Conf',c.normal,'var(--cyan)'],
-      ['Suspicious Conf',c.suspicious,'var(--amber)'],
-      ['Attack Conf',c.attack,'var(--red)'],
-      ['Keys Destroyed',Math.min(data.keys_destroyed_total/100,1),'var(--blue)',data.keys_destroyed_total],
-      ['Active Loops',Math.min(data.active_loops/10,1),'var(--green)',data.active_loops],
+      ['Normal Conf', c.normal, 'var(--cyan)'],
+      ['Suspicious Conf', c.suspicious, 'var(--amber)'],
+      ['Attack Conf', c.attack, 'var(--red)'],
+      ['Keys Destroyed', Math.min(status.keys_destroyed_total/Math.max(status.keys_destroyed_total,1),1), 'var(--blue)', status.keys_destroyed_total],
+      ['Active Loops', status.active_loops > 0 ? 1 : 0, 'var(--green)', status.active_loops],
     ];
-    document.getElementById('feat-display').innerHTML=features.map(([name,v,color,raw])=>`
+    
+    const stateColor = fileThreat==='Attack'?'var(--red)':fileThreat==='Suspicious'?'var(--amber)':'var(--green)';
+    
+    document.getElementById('feat-display').innerHTML=`
+      <div style="padding:10px 0 14px;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--ts)">File State</span>
+          <span style="font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${stateColor}">${fileState}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11px;color:var(--ts)">Threat Level</span>
+          <span style="font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${stateColor}">${fileThreat}</span>
+        </div>
+      </div>
+      ${features.map(([name,v,color,raw])=>`
       <div class="feat-row">
         <div class="feat-header">
           <span class="feat-name">${name}</span>
           <span class="feat-val" style="color:${color}">${raw!==undefined?raw:(v*100).toFixed(1)+'%'}</span>
         </div>
-        <div class="feat-track"><div class="feat-fill" style="background:${color};width:${v*100}%"></div></div>
-      </div>`).join('');
+        <div class="feat-track"><div class="feat-fill" style="background:${color};width:${Math.min(v,1)*100}%"></div></div>
+      </div>`).join('')}`;
   });
 }
 
