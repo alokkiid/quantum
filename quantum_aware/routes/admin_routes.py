@@ -609,3 +609,14 @@ def topology_data():
 
     return jsonify({'nodes': nodes})
 
+
+# ---------------------------------------------------------------------------
+# GET /api/security-score  — real calculated security score
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/api/security-score')
+@require_role('admin')
+def security_score():
+    """Return a live security score calculated from real system metrics."""
+    result = ml_engine.compute_security_score()
+    return jsonify(result)
