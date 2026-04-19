@@ -204,8 +204,19 @@ def login():
             )
             return resp
         else:
-            record_auth_failure(request.remote_addr or '0.0.0.0')
-            flash('Invalid email or password.', 'error')
+            ip = request.headers.get('X-Forwarded-For', request.remote_addr) or '0.0.0.0'
+            record_auth_failure(ip)
+
+            conn = database.get_db()
+            try:
+                conn.execute(
+                "INSERT INTO access_logs (file_id, user_id, source_ip, event_type, user_agent) VALUES (?, ?, ?, ?, ?)",
+                (None, None, ip, 'AUTH_FAIL', request.headers.get('User-Agent'))
+                )
+                conn.commit()
+            finally:
+                conn.close()
+                flash('Invalid email or password.', 'error')
             return render_template('login.html'), 401
 
     return render_template('login.html')

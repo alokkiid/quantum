@@ -74,6 +74,7 @@ def _sigmoid(x: float) -> float:
 
 
 def classify_threat(feature_vector: np.ndarray) -> dict:
+
     """
     Produce continuous, interpolated ML confidence scores based on the actual
     magnitude of each threat signal — not fixed 3-bucket outputs.
@@ -83,6 +84,26 @@ def classify_threat(feature_vector: np.ndarray) -> dict:
                               geo_anomaly_score, user_agent_entropy
     Normal score: residual after the above
     """
+    from database import get_db
+
+    conn = get_db()
+    try:
+        row = conn.execute(
+        "SELECT COUNT(*) FROM access_logs WHERE event_type='AUTH_FAIL'"
+        ).fetchone()
+        ip_auth_failures = row[0]
+    finally:
+        conn.close()
+
+    if ip_auth_failures >= 5:
+        return {
+        'state': 'Suspicious',
+        'confidence': {
+            'normal': 0.1,
+            'suspicious': 0.8,
+            'attack': 0.1
+        }
+    }
     global_rps        = feature_vector[0]
     ip_rps            = feature_vector[1]
     ip_auth_failures  = feature_vector[2]
@@ -93,13 +114,13 @@ def classify_threat(feature_vector: np.ndarray) -> dict:
 
     # --- Attack confidence: driven by raw request-per-second volume ---
     # Sigmoid centred at 50 rps, steep at 5 rps/unit
-    attack_raw = _sigmoid((global_rps - 50) / 5.0) * 0.7 \
+    attack_raw = _sigmoid((global_rps - 5) / 2.0) * 0.7 \
                + _sigmoid((ip_rps    - 25) / 3.0) * 0.3
     attack_conf = float(np.clip(attack_raw, 0.0, 0.98))
 
     # --- Suspicious confidence: driven by auth failures & anomaly signals ---
     # ip_auth_failures: sigmoid centred at 5, 1 unit wide
-    fail_sig   = _sigmoid((ip_auth_failures  - 5) / 1.0)
+    fail_sig   = _sigmoid((ip_auth_failures  - 3) / 0.5)
     # auth_failure_rate: sigmoid centred at 0.4
     rate_sig   = _sigmoid((auth_failure_rate - 0.4) / 0.05)
     # geo anomaly and UA entropy add soft evidence (0..0.2 contribution each)
@@ -109,7 +130,7 @@ def classify_threat(feature_vector: np.ndarray) -> dict:
     suspicious_conf = float(np.clip(suspicious_raw, 0.0, 0.98))
 
     # Attack dominates suspicious: if attack is high, suppress suspicious
-    suspicious_conf = suspicious_conf * (1.0 - attack_conf * 0.9)
+    suspicious_conf += fail_sig * 0.5
 
     # --- Normalise to a proper probability distribution ---
     normal_conf = float(np.clip(1.0 - attack_conf - suspicious_conf, 0.01, 0.98))
@@ -121,7 +142,7 @@ def classify_threat(feature_vector: np.ndarray) -> dict:
     normal_conf    /= total
 
     # --- Determine state from dominant probability ---
-    if attack_conf >= 0.50:
+    if attack_conf >= 0.3:
         state = 'Attack'
     elif suspicious_conf >= 0.40:
         state = 'Suspicious'
